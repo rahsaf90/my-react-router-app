@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { useRef } from 'react';
 import { Provider } from 'react-redux';
 import { makeStore, type AppStore } from '~/lib/store/store';

@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { apiBase } from './features/apiBase';
 import CounterSlice from './features/counterSlice';
+import uiSlice from './features/uiSlice';
 
 export const makeStore = () => {
   return configureStore({
     reducer: {
       [apiBase.reducerPath]: apiBase.reducer,
+      ui: uiSlice,
       counter: CounterSlice, // Include the counter slice reducer
       // Add your reducers here
     },

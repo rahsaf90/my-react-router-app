@@ -6,6 +6,8 @@ import AccountIcon from '@mui/icons-material/AccountCircle';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import EmailIcon from '@mui/icons-material/Email';
+import MenuIcon from '@mui/icons-material/Menu';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 
 export default function AppIcon(props: { icon: string } & SvgIconProps) {
   switch (props.icon) {
@@ -23,6 +25,10 @@ export default function AppIcon(props: { icon: string } & SvgIconProps) {
       return <VisibilityOffIcon {...props} />;
     case 'email':
       return <EmailIcon {...props} />;
+    case 'menu':
+      return <MenuIcon {...props} />;
+    case 'menu-open':
+      return <MenuOpenIcon {...props} />;
 
     default:
       return <HomeIcon {...props} />; // Fallback to HomeIcon if no match found
