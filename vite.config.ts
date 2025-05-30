@@ -1,8 +1,27 @@
-import { reactRouter } from "@react-router/dev/vite";
-import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
+import { reactRouter } from '@react-router/dev/vite';
+
+import { defineConfig } from 'vite';
+import tsconfigPaths from 'vite-tsconfig-paths';
+// import devtoolsJson from 'vite-plugin-devtools-json';
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+  plugins: [
+    reactRouter(),
+    tsconfigPaths(),
+    // devtoolsJson(),
+  ],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler', // or "modern"
+      },
+    },
+  },
+  resolve: {
+    alias: {
+      '@/app': '/src/app',
+      '@/lib': '/src/lib',
+      '@/components': '/src/components',
+    },
+  },
 });
