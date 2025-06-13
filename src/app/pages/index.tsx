@@ -24,6 +24,9 @@ export default function Component() {
           <Link to="/about">About</Link>
         </li>
         <li>
+          <Link to="/tasks">Tasks</Link>
+        </li>
+        <li>
           <Link to="/login">Login</Link>
         </li>
       </ul>

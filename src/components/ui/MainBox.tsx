@@ -5,8 +5,8 @@ const MainBox: React.FC<React.PropsWithChildren> = ({ children }: { children?: R
     <Box
       component="main"
       sx={{
-        padding: 3,
-        marginTop: 5,
+        padding: 2,
+
       }}
     >
       {children}
