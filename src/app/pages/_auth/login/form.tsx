@@ -13,15 +13,20 @@ import Snackbar, { type SnackbarCloseReason } from '@mui/material/Snackbar';
 // import app components
 import { FormTextField } from '~/components/ui/FormFields';
 import AppIcon from '~/components/ui/AppIcon';
+import type { IUserAuth } from '~/lib/types/common';
+import { useAppDispatch } from '~/lib/store/hooks';
+import { loginUser } from '~/lib/store/features/authSlice';
 
 // my libs
 
 const validationSchema = yup.object({
-  email: yup.string().email('Invalid email').required('Email is required'),
+  username: yup.string().label('Invalid username / Email').required('Username is required'),
   password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
 });
 
 export default function LoginForm() {
+  const dispatch = useAppDispatch();
+
   const [snack, setSnack] = useState({
     open: false,
     message: '',
@@ -44,7 +49,7 @@ export default function LoginForm() {
         open={snack.open}
         autoHideDuration={6000}
         onClose={handleSnackClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
 
         <Alert onClose={handleSnackClose} severity={snack.severity} variant="filled" sx={{ width: '100%' }}>
@@ -52,35 +57,44 @@ export default function LoginForm() {
         </Alert>
       </Snackbar>
       <Formik
-        initialValues={{ email: '', password: '' }}
+        initialValues={{ username: '', password: '' }}
         validationSchema={validationSchema}
-        onSubmit={(values, { setSubmitting }) => {
+        onSubmit={(values: IUserAuth, { setSubmitting }) => {
           console.log('Form submitted:', values);
-          // Here you would typically handle the login logic, e.g., API call
-          // For demonstration, we'll just simulate a successful login
-          // Simulate an API call
-          setTimeout(() => {
+
+          dispatch(loginUser(values)).unwrap().then(() => {
+            // Handle successful login
             setSnack({
               open: true,
               message: 'Login successful',
               severity: 'success',
             });
+            window.location.replace('/'); // Redirect to dashboard or home page
+          }).catch((error) => {
+            // Handle login error
+            console.error('Login error:', error);
+            setSnack({
+              open: true,
+              message: 'Login failed',
+              severity: 'error',
+            });
+          }).finally(() => {
             setSubmitting(false);
-          }, 1000);
+          });
         }}
       >
 
-        {
+        { // render block
           ({ isSubmitting, isValid }) => (
             <Form>
               <FormTextField
                 sx={{ marginTop: 2 }}
-                name="email"
-                label="Email"
-                type="email"
+                name="username"
+                label="Username or Email"
+                type="username"
                 fullWidth
                 required
-                autoComplete="email"
+                autoComplete="username"
                 margin="normal"
                 variant="outlined"
                 slotProps={{
