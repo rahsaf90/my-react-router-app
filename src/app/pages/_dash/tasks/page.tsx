@@ -1,6 +1,7 @@
 import { Alert, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
 import { useState } from 'react';
+import StatusBox from '~/components/ui/StatusBox';
 import { useGetTasksQuery, useGetTaskStatsQuery } from '~/lib/store/features/apiTask';
 
 export default function Tasks() {
@@ -43,22 +44,18 @@ export default function Tasks() {
       <Typography variant="h6">Task Statistics</Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, marginBottom: 2 }}>
         {dashData?.map(stat => (
-          <Box
+          <StatusBox
+            item={stat}
             key={stat.name}
             sx={{
-              padding: 2,
-              backgroundColor: '#fff',
-              borderRadius: 1,
-              boxShadow: 1,
               flex: '1 1 200px',
               cursor: 'pointer',
               textAlign: 'center',
             }}
             onClick={() => handleCardClick(stat.name)}
           >
-            <Typography variant="h6">{stat.name}</Typography>
-            <Typography variant="body1">{stat.value}</Typography>
-          </Box>
+
+          </StatusBox>
         ))}
 
       </Box>
