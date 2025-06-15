@@ -5,7 +5,7 @@ const RouteNames: Record<string, string> = {
   '/login': 'Login',
   '/dashboard': 'Dashboard',
   '/about': 'About',
-  '/tasks': 'Tasks',
+  '/tasks': 'Task Management',
   '/tasks/:id': 'Task Detail',
   '/profile/:id': 'Profile',
 };

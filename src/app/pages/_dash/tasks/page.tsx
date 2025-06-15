@@ -1,13 +1,23 @@
 import { Alert, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
-import { useState } from 'react';
+import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import { useMemo, useState } from 'react';
 import StatusBox from '~/components/ui/StatusBox';
-import { useGetTasksQuery, useGetTaskStatsQuery } from '~/lib/store/features/apiTask';
+import {
+  useGetTasksQuery,
+  useGetTaskStatsQuery,
+} from '~/lib/store/features/apiTask';
+import getTaskColumns from './_components/tableHeaders';
 
 export default function Tasks() {
   const [cardIndex, setCardIndex] = useState('card-1');
   const paginationModel = { page: 0, pageSize: 20 };
-  const { data: dashData, error: dashError, isError: dashIsError, isLoading: isDashLoading } = useGetTaskStatsQuery();
+  const {
+    data: dashData,
+    error: dashError,
+    isError: dashIsError,
+    isLoading: isDashLoading,
+  } = useGetTaskStatsQuery();
 
   const { data, error, isError, isLoading } = useGetTasksQuery({
     page: 1,
@@ -18,6 +28,9 @@ export default function Tasks() {
   const handleCardClick = (index: string) => {
     setCardIndex(index);
   };
+
+  const columns: GridColDef[] = useMemo(() => getTaskColumns(false), []);
+
   if (isError || dashIsError) {
     console.error('Error fetching tasks:', { error, dashError });
     return (
@@ -36,12 +49,8 @@ export default function Tasks() {
   }
 
   return (
-    <Box sx={{ padding: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-      <Typography variant="h4" gutterBottom>
-        Task Management
-      </Typography>
-      <Box sx={{ marginBottom: 2 }}></Box>
-      <Typography variant="h6">Task Statistics</Typography>
+    <Box>
+
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, marginBottom: 2 }}>
         {dashData?.map(stat => (
           <StatusBox
@@ -58,6 +67,21 @@ export default function Tasks() {
           </StatusBox>
         ))}
 
+      </Box>
+
+      <Box sx={{ maxHeight: '500px' }}>
+        <DataGrid
+          rows={data ? data.results : []}
+          columns={columns}
+          initialState={{
+            pagination: {
+              paginationModel: paginationModel,
+            },
+          }}
+          pageSizeOptions={[5, 10]}
+
+        >
+        </DataGrid>
       </Box>
 
     </Box>
