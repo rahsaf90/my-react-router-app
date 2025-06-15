@@ -1,6 +1,6 @@
 import { Box, styled, Typography, type BoxProps } from '@mui/material';
 
-import { slugify } from '~/lib/general';
+import { slugify } from '~/lib/utils/general';
 import type { IStatsBoxData } from '~/lib/types/common';
 import AppIcon from './AppIcon';
 

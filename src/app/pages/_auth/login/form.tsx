@@ -1,27 +1,33 @@
-import * as yup from 'yup';
 import { Form, Formik } from 'formik';
 import { useState } from 'react';
+import * as yup from 'yup';
 
 // material imports
 
-import Button from '@mui/material/Button';
-import InputAdornment from '@mui/material/InputAdornment';
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import Snackbar, { type SnackbarCloseReason } from '@mui/material/Snackbar';
 
 // import app components
-import { FormTextField } from '~/components/ui/FormFields';
 import AppIcon from '~/components/ui/AppIcon';
-import type { IUserAuth } from '~/lib/types/common';
-import { useAppDispatch } from '~/lib/store/hooks';
+import { FormTextField } from '~/components/ui/FormFields';
 import { loginUser } from '~/lib/store/features/authSlice';
+import { useAppDispatch } from '~/lib/store/hooks';
+import type { IUserAuth } from '~/lib/types/common';
 
 // my libs
 
 const validationSchema = yup.object({
-  username: yup.string().label('Invalid username / Email').required('Username is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+  username: yup
+    .string()
+    .label('Invalid username / Email')
+    .required('Username is required'),
+  password: yup
+    .string()
+    .min(6, 'Password must be at least 6 characters')
+    .required('Password is required'),
 });
 
 export default function LoginForm() {
@@ -33,7 +39,10 @@ export default function LoginForm() {
     severity: 'success' as 'success' | 'error' | 'warning' | 'info',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const handleSnackClose = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
+  const handleSnackClose = (
+    event: React.SyntheticEvent | Event,
+    reason?: SnackbarCloseReason,
+  ) => {
     if (reason === 'clickaway') {
       return;
     }
@@ -52,7 +61,12 @@ export default function LoginForm() {
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
 
-        <Alert onClose={handleSnackClose} severity={snack.severity} variant="filled" sx={{ width: '100%' }}>
+        <Alert
+          onClose={handleSnackClose}
+          severity={snack.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
           {snack.message}
         </Alert>
       </Snackbar>
@@ -99,7 +113,11 @@ export default function LoginForm() {
                 variant="outlined"
                 slotProps={{
                   input: {
-                    endAdornment: <InputAdornment position="end"><AppIcon icon="email" /></InputAdornment>,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <AppIcon icon="email" />
+                      </InputAdornment>
+                    ),
                   },
                 }}
               />
@@ -121,7 +139,13 @@ export default function LoginForm() {
                           onClick={handleShowPassword}
                           edge="end"
                         >
-                          <AppIcon icon={showPassword ? 'visibility' : 'visibility-off'} />
+                          <AppIcon
+                            icon={
+                              showPassword
+                                ? 'visibility'
+                                : 'visibility-off'
+                            }
+                          />
                         </IconButton>
                       </InputAdornment>
                     ) },

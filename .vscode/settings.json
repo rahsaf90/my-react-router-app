@@ -1,0 +1,39 @@
+{
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+
+    "eslint.run":"onSave",
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact",
+       
+    ],
+
+    "eslint.useFlatConfig": true,
+    "eslint.format.enable": true,
+    "eslint.codeActionsOnSave.rules": null,
+    "[typescript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit",
+        "source.organizeImports": "explicit",
+        "source.addMissingImports": "explicit",
+        // "source.removeUnused": "explicit",
+        "source.sortImports": "explicit",
+        "source.fixAll.ts": "explicit",
+        "source.fixAll.stylelint": "explicit"
+    },
+
+    "files.autoSave": "afterDelay",
+    "git.autofetch": true,
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+
+
+    "liveServer.settings.root": "/build/client/",
+    "liveServer.settings.port": 3111,
+    "liveServer.settings.customBrowser": "chrome",
+}

@@ -21,7 +21,13 @@ const AuthContainer = styled(Stack)(({ theme }) => {
       left: 0,
       width: '100%',
       height: '100%',
-      background: `repeating-linear-gradient(45deg, ${primary} , ${primary} 20px, ${secondary} 30px, ${secondary} 30px)`,
+      background: `repeating-linear-gradient(
+        45deg,
+        ${primary},
+        ${primary} 20px,
+        ${secondary} 30px,
+        ${secondary} 30px
+      )`,
       zIndex: -1,
     },
   };

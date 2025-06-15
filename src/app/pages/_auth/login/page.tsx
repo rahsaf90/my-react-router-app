@@ -1,6 +1,5 @@
+import type { Route } from './+types/page';
 import LoginForm from './form';
-
-import type { Route } from './+types/route';
 
 // eslint-disable-next-line no-empty-pattern
 export function meta({}: Route.MetaArgs) {
