@@ -1,7 +1,7 @@
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import PageLink from '~/components/ui/PageLink';
 import type { IKycTask } from '~/lib/types/tasks';
-import { daysFrom } from '~/lib/utils/dates';
+import { daysFrom, localDateTimeFormat } from '~/lib/utils/dates';
 
 const commonHeaders: GridColDef[] = [
   {
@@ -51,23 +51,25 @@ const commonHeaders: GridColDef[] = [
     headerName: 'Age',
     width: 100,
     sortable: true,
-    valueGetter: (v, r: IKycTask) => daysFrom(r.created_at),
+    valueGetter: (v, r: IKycTask) => daysFrom(r.created_time),
   },
 ];
 
 const endHeaders: GridColDef[] = [
 
   {
-    field: 'created_at',
+    field: 'created_time',
     headerName: 'Created At',
     width: 180,
     sortable: true,
+    valueGetter: (v, r: IKycTask) => localDateTimeFormat(r.created_time),
   },
   {
-    field: 'updated_at',
+    field: 'updated_time',
     headerName: 'Updated At',
     width: 180,
     sortable: true,
+    valueGetter: (v, r: IKycTask) => localDateTimeFormat(r.updated_time),
   },
   {
     field: 'actions',

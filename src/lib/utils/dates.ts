@@ -15,9 +15,12 @@ export function localDateFormat(
   return moment(date).local().format(format);
 }
 export function localDateTimeFormat(
-  date: Date | string,
+  date: Date | string | null | undefined,
   format = 'YYYY-MM-DD HH:mm:ss',
 ): string {
+  if (!date) {
+    return '';
+  }
   return moment(date).local().format(format);
 }
 
