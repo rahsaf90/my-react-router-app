@@ -36,7 +36,7 @@ export default tseslint.config(
       ...reactRefresh.configs.recommended.rules,
       ...stylistic.configs['recommended'].rules,
       '@stylistic/semi': ['error', 'always'],
-      '@stylistic/max-len': ['error', { code: 80 }],
+      '@stylistic/max-len': ['error', { code: 100 }],
       
       'react-refresh/only-export-components': [
         'warn',

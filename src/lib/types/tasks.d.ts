@@ -1,7 +1,12 @@
-import type { IAbstractModel } from './common';
+import type { IAbstractModel, IAbstractType } from './common';
+
+export interface ITaskType extends IAbstractType {
+  code: string
+}
 
 export interface IKycTask extends IAbstractModel {
   task_type: string // Type of the KYC task
+  frm_tmpl: number | null
   status: string // Status of the KYC task
   cif: string
   cust_name: string

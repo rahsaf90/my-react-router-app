@@ -1,9 +1,9 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-import { apiLogin, apiLogout, apiSessionRefresh, apiCSRF } from '~/lib/providers/auth';
+import moment from 'moment';
+import { apiCSRF, apiLogin, apiLogout, apiSessionRefresh } from '~/lib/providers/auth';
 import type { IUserAuth } from '~/lib/types/common';
 import { SESSION_TIMEOUT } from '../constants';
-import moment from 'moment';
 
 export const loginUser = createAsyncThunk(
   'auth/login',
@@ -36,10 +36,10 @@ export const getCSRF = createAsyncThunk(
 );
 
 interface AuthState {
-  status: 'idle' | 'pending' | 'succeeded' | 'failed';
-  error: string | null;
-  isAuthenticated: boolean;
-  sessionExpiry: string | Date | null;
+  status: 'idle' | 'pending' | 'succeeded' | 'failed'
+  error: string | null
+  isAuthenticated: boolean
+  sessionExpiry: string | Date | null
 }
 
 const initialState: AuthState = {
@@ -54,7 +54,10 @@ export const authSlice = createSlice({
   initialState,
   selectors: {
     isAuthenticated: (state: AuthState) => state.isAuthenticated,
-    sessionDate: (state: AuthState) => state.sessionExpiry === null ? null : moment(state.sessionExpiry),
+    sessionDate: (state: AuthState) =>
+      state.sessionExpiry === null
+        ? null
+        : moment(state.sessionExpiry),
     authStatus: (state: AuthState) => state.status,
     isSessionExpired: (state: AuthState) => {
       if (!state.sessionExpiry) return true;
@@ -71,9 +74,13 @@ export const authSlice = createSlice({
       )
       .addCase(loginUser.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.isAuthenticated = action.payload ?? false; // Assuming payload is a boolean indicating success
+        // Assuming payload is a boolean indicating success
+        state.isAuthenticated = action.payload ?? false;
         state.error = null;
-        state.sessionExpiry = moment().add(SESSION_TIMEOUT, 'millisecond').toDate(); // Set session expiry based on SESSION_TIMEOUT constant
+        // Set session expiry based on SESSION_TIMEOUT constant
+        state.sessionExpiry = moment()
+          .add(SESSION_TIMEOUT, 'millisecond')
+          .toDate();
       },
       ).addCase(loginUser.rejected, (state, action) => {
         state.status = 'failed';

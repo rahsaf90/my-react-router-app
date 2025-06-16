@@ -7,20 +7,23 @@ import {
   ScrollRestoration,
 } from 'react-router';
 
-import type { Route } from './+types/root';
-import './app.css';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
-import { CssBaseline } from '@mui/material';
-import { ThemeProvider } from '@mui/material';
-import theme from '~/lib/theme';
+import { CssBaseline, ThemeProvider } from '@mui/material';
 import StoreProvider from '~/components/providers/StoreProvider';
+import theme from '~/lib/theme';
+import type { Route } from './+types/root';
+import './app.css';
 
 export const links: Route.LinksFunction = () => [
 
 ];
+
+export function HydrateFallback() {
+  return <p>Loading Game...</p>;
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (

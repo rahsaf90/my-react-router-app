@@ -1,5 +1,12 @@
-import { index, layout, prefix, route, type RouteConfig } from '@react-router/dev/routes';
-// import { flatRoutes } from '@react-router/fs-routes'; // ignored for now, as it makes it more difficult to read the routes
+import {
+  index,
+  layout,
+  prefix,
+  route,
+  type RouteConfig,
+} from '@react-router/dev/routes';
+// import { flatRoutes } from '@react-router/fs-routes';
+// ignored for now, as it makes it more difficult to read the routes
 // export default flatRoutes() satisfies RouteConfig;
 export default [
 
@@ -12,11 +19,14 @@ export default [
     route('about', 'pages/_dash/about/page.tsx'), // about page. url = '/about'
 
     ...prefix('tasks', [ // tasks URL prefix. url = '/tasks'
-      index('pages/_dash/tasks/page.tsx'), // tasks index page ( list of tasks ). url = '/tasks'
-      route(':id', 'pages/_dash/tasks/detail/page.tsx'), // task detail page with dynamic id. url = '/tasks/:id'
+      // tasks index page (list of tasks). url = '/tasks'
+      index('pages/_dash/tasks/page.tsx'),
+      // task detail page with dynamic id. url = '/tasks/:id'
+      route(':id', 'pages/_dash/tasks/detail/page.tsx'),
+      route(':id/edit/', 'pages/_dash/tasks/form/page.tsx'),
     ]), // tasks prefix
-
-    route('profile/:id', 'pages/_dash/profile/page.tsx'), // profile page with dynamic id. url = '/profile/:id'
+    // profile page with dynamic id. url = '/profile/:id'
+    route('profile/:id', 'pages/_dash/profile/page.tsx'),
   ]),
 
 ] satisfies RouteConfig;

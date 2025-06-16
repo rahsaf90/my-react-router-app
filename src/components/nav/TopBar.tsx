@@ -9,7 +9,7 @@ import Button from '@mui/material/Button';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { ADMIN_URL } from '~/lib/envConfig';
-import getRouteName from '~/lib/routeNames';
+import getRouteName from '~/app/routeNames';
 import { logoutUser } from '~/lib/store/features/authSlice';
 import { toggleDrawer } from '~/lib/store/features/uiSlice';
 import { useAppDispatch, useAppSelector } from '~/lib/store/hooks';

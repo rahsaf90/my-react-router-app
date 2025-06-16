@@ -7,6 +7,7 @@ const RouteNames: Record<string, string> = {
   '/about': 'About',
   '/tasks': 'Task Management',
   '/tasks/:id': 'Task Detail',
+  '/tasks/:id/edit': 'Edit Task',
   '/profile/:id': 'Profile',
 };
 

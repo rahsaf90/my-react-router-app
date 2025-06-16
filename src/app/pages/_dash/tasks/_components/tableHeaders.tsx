@@ -86,7 +86,7 @@ function renderTaskLink(params: GridRenderCellParams<IKycTask>) {
     return null; // or return a default value
   }
   return (
-    <PageLink to={`/tasks/${row.id}`} underline="hover" color="primary">
+    <PageLink to={`/tasks/${row.id}/edit/`} underline="hover" color="primary">
       {value}
     </PageLink>
   );
