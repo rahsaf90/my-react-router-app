@@ -1,5 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { apiBase } from './features/apiBase';
+
+import AuthSlice from './features/authSlice';
 import CounterSlice from './features/counterSlice';
 import uiSlice from './features/uiSlice';
 
@@ -9,6 +11,8 @@ export const makeStore = () => {
       [apiBase.reducerPath]: apiBase.reducer,
       ui: uiSlice,
       counter: CounterSlice, // Include the counter slice reducer
+
+      auth: AuthSlice,
       // Add your reducers here
     },
     middleware: getDefaultMiddleware =>

@@ -111,5 +111,6 @@ export const authSlice = createSlice({
       );
   },
 });
-export const { isAuthenticated, sessionDate, authStatus, isSessionExpired } = authSlice.selectors;
+
 export default authSlice.reducer;
+export const { isAuthenticated, sessionDate, authStatus, isSessionExpired } = authSlice.selectors;

@@ -55,7 +55,7 @@ export async function apiLogout(): Promise<void> {
 export async function apiSessionRefresh(): Promise<IAuthSessionRefresh> {
   const refreshURL = `${BASE_API}/auth/refresh/`;
   const response = await fetch(refreshURL, {
-    method: 'POST',
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },

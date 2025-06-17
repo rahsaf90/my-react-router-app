@@ -1,5 +1,7 @@
 import Box from '@mui/material/Box';
+
 import { Navigate, Outlet } from 'react-router';
+import IdleTimerComponent from '~/components/auth/IdleTimer';
 import SideBar from '~/components/nav/SideBar';
 import TopBar from '~/components/nav/TopBar';
 import MainBox from '~/components/ui/MainBox';
@@ -35,6 +37,7 @@ export default function Layout() {
         <SideBar />
         <Outlet />
       </MainBox>
+      <IdleTimerComponent></IdleTimerComponent>
     </Box>
   );
 }
