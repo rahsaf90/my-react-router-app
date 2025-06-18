@@ -32,18 +32,31 @@ export interface IListType extends IAbstractModel {
   options: IListOption[]
 }
 
+type FieldType = 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'checkbox' | 'textarea';
+
+export interface IFrmFieldRules {
+  min?: number
+  max?: number
+  format?: 'email' | 'url' | 'phone' // Additional formats can be
+  required?: boolean
+  pattern?: string // Custom validation rule, e.g., regex pattern
+  error_message?: string // Custom error message for validation
+}
+
 export interface IFrmField extends IAbstractModel {
   name: string
   version: number
   description: string
   is_active: boolean
   disp_order: number
-  field_type: 'text|number|date|select |multiselect|checkbox|textarea'
+  col_size: number // Size of the field in the form, e.g., 12 for full width, 6 for half width, etc.
+  field_type: FieldType
   model_name: string
   attr_name: string
-  mandatory: boolean
+
   list_type?: number // Optional, if field type is select or multiselect
   form_sub_section: number // Optional, if field belongs to a form subsection
+  rules?: IFrmFieldRules // Validation rules for the field
 }
 
 export interface IFrmSubSect extends IAbstractModel {
@@ -62,6 +75,7 @@ export interface IFrmSect extends IAbstractModel {
   description: string
   is_active: boolean
   disp_order: number
+  sub_sections: IFrmSubSect[]
 }
 
 export interface IFrmTmplSerialized extends IAbstractModel {

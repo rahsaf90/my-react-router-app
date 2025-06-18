@@ -80,7 +80,7 @@ export const authSlice = createSlice({
         // Set session expiry based on SESSION_TIMEOUT constant
         state.sessionExpiry = moment()
           .add(SESSION_TIMEOUT, 'millisecond')
-          .toDate();
+          .toISOString();
       },
       ).addCase(loginUser.rejected, (state, action) => {
         state.status = 'failed';
@@ -94,7 +94,7 @@ export const authSlice = createSlice({
       },
       ).addCase(refreshSession.fulfilled, (state, action) => {
         if (action.payload) {
-          state.sessionExpiry = moment().add(action.payload.expiry_age, 'seconds').toDate();
+          state.sessionExpiry = moment().add(action.payload.expiry_age, 'seconds').toISOString();
           state.error = null;
           state.isAuthenticated = true; // Assuming session refresh keeps the user authenticated
         }
