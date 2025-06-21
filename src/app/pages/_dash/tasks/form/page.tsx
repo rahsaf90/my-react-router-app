@@ -77,7 +77,7 @@ export default function TaskFormPage({
     return <div>Loading...</div>;
   }
 
-  if (!data && !task) {
+  if (!data || !task) {
     return (
       <div>
         Data not found
