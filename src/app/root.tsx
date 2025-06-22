@@ -25,7 +25,7 @@ export function HydrateFallback() {
   return <p>Loading Game...</p>;
 }
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Layout() {
   return (
     <html lang="en">
       <head>
@@ -37,8 +37,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ThemeProvider theme={theme}>
+          <CssBaseline />
           <StoreProvider>
-            {children}
+            <Outlet />
           </StoreProvider>
         </ThemeProvider>
         <ScrollRestoration />
