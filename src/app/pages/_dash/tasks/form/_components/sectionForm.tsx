@@ -41,8 +41,10 @@ export default function SectionForm({ section, taskId, formTmplId, listTypes }: 
             cus_id: 111 },
         }}
         validationSchema={validationSchema}
-        onSubmit={(values, { setSubmitting }) => {
+        onSubmit={async (values, { setSubmitting }) => {
           console.log('Form submitted:', values);
+          // Add a delay before setting submitting to false
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
           setSubmitting(false);
         }}
       >
