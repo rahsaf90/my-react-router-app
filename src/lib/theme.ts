@@ -1,30 +1,31 @@
-import { createTheme, alpha, lighten, rgbToHex } from '@mui/material/styles';
-import type {} from '@mui/x-data-grid/themeAugmentation'; // Import for MUI X Data Grid theme augmentation
+import { alpha, createTheme, lighten, rgbToHex } from '@mui/material/styles';
+import type { } from '@mui/x-data-grid/themeAugmentation';
+//  // Import for MUI X Data Grid theme augmentation
 const primaryBase = '#003566';
 const secondaryBase = '#005eb8';
 
 declare module '@mui/material/styles' {
   interface Theme {
     altColors: {
-      primaryAlpha: string;
-      secondaryAlpha: string;
-      primaryLighter: string;
-      secondaryLighter: string;
-      greenSoft: string;
-      redSoft: string;
-      amberSoft: string;
-    };
+      primaryAlpha: string
+      secondaryAlpha: string
+      primaryLighter: string
+      secondaryLighter: string
+      greenSoft: string
+      redSoft: string
+      amberSoft: string
+    }
   }
   interface ThemeOptions {
     altColors?: {
-      primaryAlpha?: string;
-      secondaryAlpha?: string;
-      primaryLighter?: string;
-      secondaryLighter?: string;
-      greenSoft?: string;
-      redSoft?: string;
-      amberSoft?: string;
-    };
+      primaryAlpha?: string
+      secondaryAlpha?: string
+      primaryLighter?: string
+      secondaryLighter?: string
+      greenSoft?: string
+      redSoft?: string
+      amberSoft?: string
+    }
   }
 }
 
