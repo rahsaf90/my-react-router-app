@@ -1,5 +1,6 @@
 import { Box, Button, Divider, Typography } from '@mui/material';
 import { Form, Formik } from 'formik';
+import { useMemo } from 'react';
 import Ribbon from '~/components/ui/StyledRibbon';
 import type { IFrmSect, IListType } from '~/lib/types/conf';
 import { generateYupSchema } from '~/lib/utils/yupGenerator';
@@ -12,7 +13,7 @@ interface SectionFormProps {
 }
 
 export default function SectionForm({ section, taskId, formTmplId, listTypes }: SectionFormProps) {
-  const validationSchema = generateYupSchema(section);
+  const validationSchema = useMemo(() => generateYupSchema(section), [section]);
 
   return (
     <div title={`task-${taskId}-form-${formTmplId}-section-${section.id}`}>
@@ -38,7 +39,11 @@ export default function SectionForm({ section, taskId, formTmplId, listTypes }: 
           CoreProfile: {
             planets: 'Earth',
             name: 'John Doe',
-            cus_id: 111 },
+            cus_id: 111,
+          },
+          ExtProfile1: {
+            earth_add: '',
+          },
         }}
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting }) => {
@@ -49,7 +54,7 @@ export default function SectionForm({ section, taskId, formTmplId, listTypes }: 
         }}
       >
         { // render block
-          ({ isSubmitting, isValid }) => (
+          ({ isSubmitting, isValid, values }) => (
             <Form>
 
               {section.sub_sections.map(subSection => (
@@ -58,6 +63,7 @@ export default function SectionForm({ section, taskId, formTmplId, listTypes }: 
                   <SubFormForm
                     subSection={subSection}
                     listTypes={listTypes}
+                    values={values}
                   />
                 </Box>
               ))}

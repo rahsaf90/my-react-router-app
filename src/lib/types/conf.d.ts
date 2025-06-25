@@ -34,6 +34,12 @@ export interface IListType extends IAbstractModel {
 
 type FieldType = 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'checkbox' | 'textarea';
 
+export interface IRuleFieldWithValues {
+  parent: string
+  field: string // The field name to check
+  values: (string | number)[] // Values that will hide this field if matched
+}
+
 export interface IFrmFieldRules {
   min?: number
   max?: number
@@ -41,6 +47,9 @@ export interface IFrmFieldRules {
   required?: boolean
   pattern?: string // Custom validation rule, e.g., regex pattern
   error_message?: string // Custom error message for validation
+  hidden_if_in?: IRuleFieldWithValues[]
+  visible_if_in?: IRuleFieldWithValues[] // Conditions to show the field based on other field values
+  // Array of conditions to hide the field based on other field values
 }
 
 export interface IFrmField extends IAbstractModel {

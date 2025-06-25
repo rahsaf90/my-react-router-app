@@ -1,6 +1,8 @@
 import { Box } from '@mui/material';
 
-const MainBox: React.FC<React.PropsWithChildren> = ({ children }: { children?: React.ReactNode }) => {
+const MainBox: React.FC<React.PropsWithChildren> = (
+  { children }: { children?: React.ReactNode },
+) => {
   return (
     <Box
       component="main"

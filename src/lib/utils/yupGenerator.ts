@@ -3,7 +3,6 @@ import type { IFrmField, IFrmFieldRules, IFrmSect } from '../types/conf';
 
 export function generateYupSchema(jsonConfig: IFrmSect) {
   const shape: Record<string, Yup.AnySchema> = {};
-
   const modelShapes: Record<string, Record<string, Yup.AnySchema>> = {};
 
   jsonConfig.sub_sections.forEach((subSection) => {
@@ -23,78 +22,119 @@ export function generateYupSchema(jsonConfig: IFrmSect) {
   return Yup.object().shape(shape);
 }
 
+const applyCommonStringRules = (
+  validator: Yup.StringSchema,
+  rules: IFrmFieldRules,
+  fieldName: string,
+) => {
+  let v = validator.label(fieldName);
+  if (rules.required) v = v.required('Required');
+  if (rules.min) v = v.min(rules.min, `Minimum length is ${rules.min}`);
+  if (rules.max) v = v.max(rules.max, `Maximum length is ${rules.max}`);
+  if (rules.pattern) {
+    v = v.matches(
+      new RegExp(rules.pattern),
+      rules.error_message ?? 'Invalid format',
+    );
+  }
+  return v;
+};
+
+const applyHiddenIfInRules = (
+  validator: Yup.StringSchema,
+  rules: IFrmFieldRules,
+) => {
+  let v = validator;
+  if (rules.hidden_if_in) {
+    rules.hidden_if_in.forEach((condition) => {
+      v = v.when(`$${condition.parent}.${condition.field}`, {
+        is: (val: string | number | (string | number)[]) => {
+          if (Array.isArray(val)) {
+            return condition.values.some(value => val.includes(value));
+          }
+          return condition.values.includes(val);
+        }, // alternatively: (val) => val == true
+        then: schema => schema.required(),
+        otherwise: schema => schema.notRequired(),
+      });
+    });
+  }
+  return v;
+};
+
 const getValidator = (field: IFrmField) => {
-  let validator;
   const rules: IFrmFieldRules = field.rules ?? {};
+  const fieldName = field.name;
+
   switch (field.field_type) {
-    case 'text':
-      validator = Yup.string().label(field.name);
-      if (rules.required) validator = validator.required('Required');
+    case 'text': {
+      let validator = Yup.string();
+      validator = applyCommonStringRules(validator, rules, fieldName);
       if (rules.format === 'email') validator = validator.email('Invalid email');
-      if (rules.min) validator = validator.min(rules.min, `Minimum length is ${rules.min}`);
-      if (rules.max) validator = validator.max(rules.max, `Maximum length is ${rules.max}`);
-      if (rules.pattern) {
-        validator = validator.matches(
-          new RegExp(rules.pattern),
-          rules.error_message ?? 'Invalid format',
-        );
-      }
-      break;
-    case 'number':
-      validator = Yup.number().label(field.name);
+      if (rules.hidden_if_in) validator = applyHiddenIfInRules(validator, rules);
+      //   if (rules.hidden_if_in) {
+      //     validator = validator.test(
+      //       'is-jimmy',
+      //       '${path} is not Jimmy',
+
+      //       (value, context) => {
+      //         const otherVal = context.options.context.CoreProfile.planets;
+      //         console.log(value, otherVal);
+      //         return value === otherVal;
+      //       },
+      //     );
+      //   }
+      return validator;
+    }
+    case 'textarea': {
+      let validator = Yup.string();
+      validator = applyCommonStringRules(validator, rules, fieldName);
+      return validator;
+    }
+    case 'number': {
+      let validator = Yup.number().label(fieldName);
       if (rules.required) validator = validator.required('Required');
       if (rules.min !== undefined) validator = validator.min(rules.min);
       if (rules.max !== undefined) validator = validator.max(rules.max);
-      break;
-    case 'date':
-      validator = Yup.date().label(field.name);
+      return validator;
+    }
+    case 'date': {
+      let validator = Yup.date().label(fieldName);
       if (rules.required) validator = validator.required('Required');
       if (rules.min) validator = validator.min(new Date(rules.min), 'Date is too early');
       if (rules.max) validator = validator.max(new Date(rules.max), 'Date is too late');
-      break;
-    case 'select':
-      validator = Yup.string().label(field.name); ;
+      return validator;
+    }
+    case 'select': {
+      let validator = Yup.string().label(fieldName);
       if (rules.required) validator = validator.required('Required');
-      break;
-
-    case 'multiselect':
-      validator = Yup.array().of(Yup.string().label(field.name));
+      return validator;
+    }
+    case 'multiselect': {
+      let validator = Yup.array().of(Yup.string().label(fieldName));
       if (rules.required) validator = validator.required('Required');
       if (rules.min) {
         validator = validator.min(
           rules.min,
-          'At least {min} options must be selected',
+          `At least ${rules.min} options must be selected`,
         );
       }
       if (rules.max) {
         validator = validator.max(
           rules.max,
-          'No more than {max} options can be selected',
+          `No more than ${rules.max} options can be selected`,
         );
       }
-      break;
-
-    case 'checkbox':
-      validator = Yup.boolean().label(field.name);
+      return validator;
+    }
+    case 'checkbox': {
+      let validator = Yup.boolean().label(fieldName);
       if (rules.required) validator = validator.required('Required');
-      break;
-    case 'textarea':
-      validator = Yup.string();
-      if (rules.required) validator = validator.required('Required');
-      if (rules.min) validator = validator.min(rules.min, `Minimum length is ${rules.min}`);
-      if (rules.max) validator = validator.max(rules.max, `Maximum length is ${rules.max}`);
-      if (rules.pattern) {
-        validator = validator.matches(
-          new RegExp(rules.pattern),
-          rules.error_message ?? 'Invalid format',
-        );
-      }
-      break;
-      // Add more types as needed
+      return validator;
+    }
     default:
-      validator = Yup.mixed().label(field.name);
+      return Yup.mixed().label(fieldName);
   }
-  return validator;
 };
 // Usage:
 // const schema = generateYupSchema(jsonConfig);
