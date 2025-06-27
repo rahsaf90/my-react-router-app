@@ -40,23 +40,54 @@ const applyCommonStringRules = (
   return v;
 };
 
-const applyHiddenIfInRules = (
+const applyFieldValueRules = (
   validator: Yup.StringSchema,
   rules: IFrmFieldRules,
 ) => {
   let v = validator;
-  if (rules.hidden_if_in) {
-    rules.hidden_if_in.forEach((condition) => {
-      v = v.when(`$${condition.parent}.${condition.field}`, {
+  if (rules.field_in_values) {
+    rules.field_in_values.forEach((condition) => {
+      v = v.when(`$${condition.field}`, {
         is: (val: string | number | (string | number)[]) => {
+          let result = false;
           if (Array.isArray(val)) {
-            return condition.values.some(value => val.includes(value));
+            result = condition.values.some(value => val.includes(value));
           }
-          return condition.values.includes(val);
+          else {
+            result = condition.values.includes(val);
+          }
+          return condition.isNot ? !result : result;
         }, // alternatively: (val) => val == true
         then: schema => schema.required(),
         otherwise: schema => schema.notRequired(),
       });
+    });
+  }
+
+  if (rules.one_of_fields) {
+    v = v.oneOf(rules.one_of_fields.map(field => Yup.ref(`$${field}`)));
+  }
+  if (rules.when_eq_fields) {
+    const { fields, isNot } = rules.when_eq_fields;
+    v = v.when(fields.map(f => `$${f}`), {
+      is: (val1: string | string[], val2: string | string[]) => {
+        let result = false;
+        if (Array.isArray(val1) && Array.isArray(val2)) {
+          result = val1.every((v, i) => v === val2[i]);
+        }
+        else if (Array.isArray(val1)) {
+          result = val1.includes(val2 as string);
+        }
+        else if (Array.isArray(val2)) {
+          result = val2.includes(val1);
+        }
+        else {
+          result = val1 === val2;
+        }
+        return isNot ? !result : result;
+      },
+      then: schema => schema.required(),
+      otherwise: schema => schema.notRequired(),
     });
   }
   return v;
@@ -71,19 +102,7 @@ const getValidator = (field: IFrmField) => {
       let validator = Yup.string();
       validator = applyCommonStringRules(validator, rules, fieldName);
       if (rules.format === 'email') validator = validator.email('Invalid email');
-      if (rules.hidden_if_in) validator = applyHiddenIfInRules(validator, rules);
-      //   if (rules.hidden_if_in) {
-      //     validator = validator.test(
-      //       'is-jimmy',
-      //       '${path} is not Jimmy',
-
-      //       (value, context) => {
-      //         const otherVal = context.options.context.CoreProfile.planets;
-      //         console.log(value, otherVal);
-      //         return value === otherVal;
-      //       },
-      //     );
-      //   }
+      validator = applyFieldValueRules(validator, rules);
       return validator;
     }
     case 'textarea': {
