@@ -69,6 +69,37 @@ export default function Tasks() {
 
       </Box>
 
+      <Box id="filters" sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <Box sx={{ flex: 1 }}>
+          <input
+            type="text"
+            placeholder="Task Name"
+            style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+          />
+        </Box>
+        <Box sx={{ flex: 1 }}>
+          <input
+            type="text"
+            placeholder="Task Type"
+            style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+          />
+        </Box>
+        <Box sx={{ flex: 1 }}>
+          <input
+            type="text"
+            placeholder="Assignee"
+            style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+          />
+        </Box>
+        <Box sx={{ flex: 2 }}>
+          <input
+            type="text"
+            placeholder="More"
+            style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+          />
+        </Box>
+      </Box>
+
       <Box sx={{ maxHeight: '500px' }}>
         <DataGrid
           rows={data ? data.results : []}
