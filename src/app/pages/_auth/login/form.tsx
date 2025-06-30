@@ -1,9 +1,9 @@
-import { Form, Formik } from 'formik';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 // material imports
-
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -39,6 +39,21 @@ export default function LoginForm() {
     severity: 'success' as 'success' | 'error' | 'warning' | 'info',
   });
   const [showPassword, setShowPassword] = useState(false);
+
+  const {
+    handleSubmit,
+    control,
+    formState: { isSubmitting, isValid },
+    setError,
+  } = useForm<IUserAuth>({
+    resolver: yupResolver(validationSchema),
+    mode: 'onChange',
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+  });
+
   const handleSnackClose = (
     event: React.SyntheticEvent | Event,
     reason?: SnackbarCloseReason,
@@ -52,6 +67,28 @@ export default function LoginForm() {
   const handleShowPassword = () => {
     setShowPassword(!showPassword);
   };
+
+  const onSubmit = async (values: IUserAuth) => {
+    try {
+      await dispatch(loginUser(values)).unwrap();
+      setSnack({
+        open: true,
+        message: 'Login successful',
+        severity: 'success',
+      });
+      window.location.replace('/');
+    }
+    catch {
+      setSnack({
+        open: true,
+        message: 'Login failed',
+        severity: 'error',
+      });
+      setError('username', { message: ' ' });
+      setError('password', { message: ' ' });
+    }
+  };
+
   return (
     <>
       <Snackbar
@@ -60,7 +97,6 @@ export default function LoginForm() {
         onClose={handleSnackClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-
         <Alert
           onClose={handleSnackClose}
           severity={snack.severity}
@@ -70,104 +106,82 @@ export default function LoginForm() {
           {snack.message}
         </Alert>
       </Snackbar>
-      <Formik
-        initialValues={{ username: '', password: '' }}
-        validationSchema={validationSchema}
-        onSubmit={(values: IUserAuth, { setSubmitting }) => {
-          console.log('Form submitted:', values);
-
-          dispatch(loginUser(values)).unwrap().then(() => {
-            // Handle successful login
-            setSnack({
-              open: true,
-              message: 'Login successful',
-              severity: 'success',
-            });
-            window.location.replace('/'); // Redirect to dashboard or home page
-          }).catch((error) => {
-            // Handle login error
-            console.error('Login error:', error);
-            setSnack({
-              open: true,
-              message: 'Login failed',
-              severity: 'error',
-            });
-          }).finally(() => {
-            setSubmitting(false);
-          });
-        }}
+      <form
+        onSubmit={event =>
+          void handleSubmit(onSubmit)(event)}
+        noValidate
       >
+        <FormTextField<IUserAuth>
+          sx={{ marginTop: 2 }}
+          name="username"
+          label="Username or Email"
+          type="username"
+          fullWidth
+          required
+          autoComplete="username"
+          margin="normal"
+          variant="outlined"
 
-        { // render block
-          ({ isSubmitting, isValid }) => (
-            <Form>
-              <FormTextField
-                sx={{ marginTop: 2 }}
-                name="username"
-                label="Username or Email"
-                type="username"
-                fullWidth
-                required
-                autoComplete="username"
-                margin="normal"
-                variant="outlined"
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <AppIcon icon="email" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-              <FormTextField
-                sx={{ marginTop: 2 }}
-                name="password"
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                fullWidth
-                required
-                autoComplete="current-password"
-                margin="normal"
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label="toggle password visibility"
-                          onClick={handleShowPassword}
-                          edge="end"
-                        >
-                          <AppIcon
-                            icon={
-                              showPassword
-                                ? 'visibility'
-                                : 'visibility-off'
-                            }
-                          />
-                        </IconButton>
-                      </InputAdornment>
-                    ) },
-                }}
-              />
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                fullWidth
-                disabled={isSubmitting || !isValid}
-                loading={isSubmitting}
-                loadingPosition="start"
-              >
-                {isSubmitting ? 'Logging in...' : 'Login'}
-              </Button>
-            </Form>
-          )
-        }
+          control={control}
 
-      </Formik>
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <AppIcon icon="email" />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+
+        <FormTextField<IUserAuth>
+          name="password"
+          sx={{ marginTop: 2 }}
+          label="Password"
+          type={showPassword ? 'text' : 'password'}
+          fullWidth
+          required
+          autoComplete="current-password"
+          margin="normal"
+
+          control={control}
+
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={handleShowPassword}
+                    edge="end"
+                    tabIndex={-1}
+                  >
+                    <AppIcon
+                      icon={
+                        showPassword
+                          ? 'visibility'
+                          : 'visibility-off'
+                      }
+                    />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          fullWidth
+          disabled={isSubmitting || !isValid}
+          sx={{ mt: 2 }}
+        >
+          {isSubmitting ? 'Logging in...' : 'Login'}
+        </Button>
+      </form>
     </>
-
   );
 }

@@ -28,7 +28,7 @@ const applyCommonStringRules = (
   fieldName: string,
 ) => {
   let v = validator.label(fieldName);
-  if (rules.required) v = v.required('Required');
+  v = rules.required ? v.required('Required') : v.optional();
   if (rules.min) v = v.min(rules.min, `Minimum length is ${rules.min}`);
   if (rules.max) v = v.max(rules.max, `Maximum length is ${rules.max}`);
   if (rules.pattern) {
@@ -65,12 +65,15 @@ const applyFieldValueRules = (
   }
 
   if (rules.one_of_fields) {
-    v = v.oneOf(rules.one_of_fields.map(field => Yup.ref(`$${field}`)));
+    // v = v.oneOf(rules.one_of_fields.map(field => Yup.ref(`$${field}`)));
   }
   if (rules.when_eq_fields) {
     const { fields, isNot } = rules.when_eq_fields;
     v = v.when(fields.map(f => `$${f}`), {
-      is: (val1: string | string[], val2: string | string[]) => {
+      is: (val1: null | string | string[], val2: null | string | string[]) => {
+        if (val1 === undefined || val2 === undefined) return false;
+        if (val1 === null || val2 === null) return false;
+        if (val1 === '' || val2 === '') return false;
         let result = false;
         if (Array.isArray(val1) && Array.isArray(val2)) {
           result = val1.every((v, i) => v === val2[i]);
@@ -84,6 +87,20 @@ const applyFieldValueRules = (
         else {
           result = val1 === val2;
         }
+        return isNot ? !result : result;
+      },
+      then: schema => schema.required(),
+      otherwise: schema => schema.notRequired(),
+    });
+  }
+
+  if (rules.if_has_value) {
+    const { fields, isNot } = rules.if_has_value;
+    v = v.when(fields.map(f => `$${f}`), {
+      is: (...values: string[]) => {
+        const result = values.some(
+          value => value !== undefined && value !== null && value !== '',
+        );
         return isNot ? !result : result;
       },
       then: schema => schema.required(),

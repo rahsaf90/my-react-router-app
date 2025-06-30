@@ -60,6 +60,8 @@ export interface IFrmFieldRules {
   // Current value must match one of these fields
   when_eq_fields?: IRuleFieldCompare // Array of field pairs to compare for equality
 
+  if_has_value?: IRuleFieldCompare
+
 }
 
 export interface IFrmField extends IAbstractModel {
