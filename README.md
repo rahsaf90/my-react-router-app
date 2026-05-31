@@ -78,6 +78,18 @@ Make sure to deploy the output of `npm run build`
 │   └── server/    # Server-side code
 ```
 
+## Performance Notes
+
+The large form sample at `src/components/forms/LargeRHFTableSample.tsx` was optimized for responsiveness and scale:
+
+- Converted to a multistep wizard (Details -> Line items -> Review) to reduce cognitive load and gate validation by step.
+- Added step-level validation on Next actions, while preserving full-form validation on final submit.
+- Virtualized line-item row rendering so only visible rows (plus a small buffer) are mounted.
+- Kept totals computation isolated in a dedicated memoized component that watches only line-item data.
+- Reduced validation churn by using `mode: onSubmit` and `reValidateMode: onBlur`.
+
+Expected result: smoother editing for large item counts, lower render overhead, and a clearer submit flow.
+
 ## Styling
 
 This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
