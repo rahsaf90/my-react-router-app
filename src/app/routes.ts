@@ -17,6 +17,7 @@ export default [
   layout('pages/_dash/layout.tsx', [ // dashboard layout. no url prefix
     index('pages/index.tsx'), // root index page. url = '/'
     route('about', 'pages/_dash/about/page.tsx'), // about page. url = '/about'
+    route('samples/rhf-table', 'pages/_dash/samples/rhf-table/page.tsx'),
 
     ...prefix('tasks', [ // tasks URL prefix. url = '/tasks'
       // tasks index page (list of tasks). url = '/tasks'
