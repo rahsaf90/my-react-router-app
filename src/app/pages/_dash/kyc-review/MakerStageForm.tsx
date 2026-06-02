@@ -7,41 +7,33 @@ import {
     StepLabel,
     Stepper,
     TextField,
+    Typography,
 } from '@mui/material';
-import { useState } from 'react';
-import { useForm, useWatch, type Path, type Resolver } from 'react-hook-form';
+import { useMemo, useState } from 'react';
+import {
+    useForm,
+    useWatch,
+    type Path,
+    type Resolver,
+} from 'react-hook-form';
+import type { IFrmSect, IFrmSubSect, IFrmTmplSerialized } from '~/lib/types/conf';
 import type { ICountry, IKycFormValues, ISegment } from '~/lib/types/kyc';
-import AccountDetailsStep from './AccountDetailsStep';
-import AddressStep from './AddressStep';
-import CustomerInfoStep from './CustomerInfoStep';
-import DocumentUploadStep from './DocumentUploadStep';
+import {
+    bucketForSubSect,
+    sectionValidationPaths,
+    visibleFields,
+    visibleSections,
+    visibleSubSects,
+} from './dynamicForm';
+import DynamicSubSection from './DynamicSubSection';
 import ReviewStep from './ReviewStep';
-import { kycFormDefaults, kycFormSchema } from './schema';
-import WealthSourcesStep from './WealthSourcesStep';
+import { buildKycSchema, kycFormDefaults } from './schema';
 
-/* ------------------------------------------------------------------ */
-/*  Sub-steps within the Maker workflow stage                          */
-/* ------------------------------------------------------------------ */
-const SUB_STEPS = [
-  'Demographics',
-  'Addresses',
-  'Accounts',
-  'Sources of Wealth',
-  'Documents',
-  'Review & Submit',
-] as const;
-
-/** Fields validated before leaving each sub-step. */
-const STEP_FIELDS: Path<IKycFormValues>[][] = [
-  ['profile'],
-  ['addresses'],
-  ['accounts'],
-  ['wealthSources'],
-  ['documents'],
-  [],
-];
+const REVIEW_STEP_LABEL = 'Review & Submit';
 
 interface MakerStageFormProps {
+  /** Flattened, config-driven form template (FrmTmpl.json_config). */
+  template: IFrmTmplSerialized
   /** Pre-fill values (e.g. when a rejected Maker stage is reworked). */
   initialValues?: Partial<IKycFormValues>
   countries: ICountry[]
@@ -51,12 +43,41 @@ interface MakerStageFormProps {
 }
 
 export default function MakerStageForm({
+  template,
   initialValues,
   countries,
   segments,
   submitting,
   onSubmit,
 }: MakerStageFormProps) {
+  const sections = useMemo(
+    () => visibleSections(template.form_sections ?? []),
+    [template],
+  );
+
+  /** The remarks sub-section (workflow.WorkflowStageInstance), if templated. */
+  const remarksSubSect: IFrmSubSect | undefined = useMemo(() => {
+    for (const section of sections) {
+      const sub = visibleSubSects(section).find(
+        s => bucketForSubSect(s) === 'remarks',
+      );
+      if (sub) return sub;
+    }
+    return undefined;
+  }, [sections]);
+
+  const remarksField = remarksSubSect
+    ? visibleFields(remarksSubSect)[0]
+    : undefined;
+
+  const steps = useMemo(
+    () => [...sections.map(s => s.name), REVIEW_STEP_LABEL],
+    [sections],
+  );
+
+  /** Validation schema generated from the template's field rules. */
+  const schema = useMemo(() => buildKycSchema(template), [template]);
+
   const [subStep, setSubStep] = useState(0);
   const [remarks, setRemarks] = useState('');
 
@@ -65,12 +86,12 @@ export default function MakerStageForm({
     handleSubmit,
     trigger,
     setValue,
-    formState: { errors },
   } = useForm<IKycFormValues>({
-    resolver: yupResolver(kycFormSchema) as Resolver<IKycFormValues>,
+    resolver: yupResolver(schema) as Resolver<IKycFormValues>,
     defaultValues: { ...kycFormDefaults, ...initialValues },
     mode: 'onTouched',
   });
+
   const [
     reviewProfile,
     reviewAddresses,
@@ -90,12 +111,15 @@ export default function MakerStageForm({
     documents: reviewDocuments ?? kycFormDefaults.documents,
   };
 
-  const isLast = subStep === SUB_STEPS.length - 1;
+  const isReviewStep = subStep === steps.length - 1;
+  const currentSection: IFrmSect | undefined = sections[subStep];
 
   const handleNext = async () => {
-    const fields = STEP_FIELDS[subStep];
-    const valid = fields.length === 0 ? true : await trigger(fields);
-    if (valid) setSubStep(s => Math.min(s + 1, SUB_STEPS.length - 1));
+    const paths = currentSection ? sectionValidationPaths(currentSection) : [];
+    const valid = paths.length === 0
+      ? true
+      : await trigger(paths as Path<IKycFormValues>[]);
+    if (valid) setSubStep(s => Math.min(s + 1, steps.length - 1));
   };
 
   const handleBack = () => setSubStep(s => Math.max(s - 1, 0));
@@ -104,10 +128,23 @@ export default function MakerStageForm({
   // can persist domain resources and upload documents.
   const submit = handleSubmit(values => onSubmit(values, remarks));
 
+  const remarksBox = (
+    <TextField
+      label={remarksField?.name ?? 'Remarks to checker'}
+      value={remarks}
+      onChange={e => setRemarks(e.target.value)}
+      helperText={remarksField?.rules?.help}
+      required={remarksField?.rules?.required}
+      fullWidth
+      multiline
+      minRows={2}
+    />
+  );
+
   return (
     <Stack spacing={2}>
       <Stepper activeStep={subStep} alternativeLabel>
-        {SUB_STEPS.map(label => (
+        {steps.map(label => (
           <Step key={label}>
             <StepLabel>{label}</StepLabel>
           </Step>
@@ -115,30 +152,37 @@ export default function MakerStageForm({
       </Stepper>
 
       <Box sx={{ mt: 1 }}>
-        {subStep === 0 && (
-          <CustomerInfoStep control={control} countries={countries} segments={segments} />
+        {!isReviewStep && currentSection && (
+          <Stack spacing={3}>
+            {currentSection.description && (
+              <Typography variant="body2" color="text.secondary">
+                {currentSection.description}
+              </Typography>
+            )}
+            {visibleSubSects(currentSection).map((sub) => {
+              if (bucketForSubSect(sub) === 'remarks') {
+                return <Box key={sub.id}>{remarksBox}</Box>;
+              }
+              return (
+                <DynamicSubSection
+                  key={sub.id}
+                  sub={sub}
+                  control={control}
+                  setValue={setValue}
+                  countries={countries}
+                  segments={segments}
+                />
+              );
+            })}
+          </Stack>
         )}
-        {subStep === 1 && (
-          <AddressStep control={control} errors={errors} countries={countries} />
-        )}
-        {subStep === 2 && <AccountDetailsStep control={control} errors={errors} />}
-        {subStep === 3 && (
-          <WealthSourcesStep control={control} errors={errors} countries={countries} />
-        )}
-        {subStep === 4 && (
-          <DocumentUploadStep control={control} errors={errors} setValue={setValue} />
-        )}
-        {subStep === 5 && (
+
+        {isReviewStep && (
           <Stack spacing={2}>
             <ReviewStep values={reviewValues} countries={countries} segments={segments} />
-            <TextField
-              label="Remarks to checker"
-              value={remarks}
-              onChange={e => setRemarks(e.target.value)}
-              fullWidth
-              multiline
-              minRows={2}
-            />
+            {/* Only show the remarks box here when it is not templated into a
+                section of its own. */}
+            {!remarksField && remarksBox}
           </Stack>
         )}
       </Box>
@@ -147,7 +191,7 @@ export default function MakerStageForm({
         <Button onClick={handleBack} disabled={subStep === 0 || submitting}>
           Back
         </Button>
-        {isLast
+        {isReviewStep
           ? (
               <Button
                 variant="contained"

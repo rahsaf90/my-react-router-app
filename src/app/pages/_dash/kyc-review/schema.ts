@@ -1,4 +1,5 @@
 import * as yup from 'yup';
+import type { IFrmField, IFrmSubSect, IFrmTmplSerialized } from '~/lib/types/conf';
 import type {
     IKycAccountForm,
     IKycAddressForm,
@@ -7,6 +8,14 @@ import type {
     IKycProfileForm,
     IKycWealthSourceForm,
 } from '~/lib/types/kyc';
+import {
+    bucketForSubSect,
+    isArrayBucket,
+    visibleFields,
+    visibleSections,
+    visibleSubSects,
+    type KycArrayBucket,
+} from './dynamicForm';
 
 /* ------------------------------------------------------------------ */
 /*  Backend choice values (mirror kyc.models.core TextChoices)         */
@@ -287,3 +296,134 @@ export const kycFormDefaults: IKycFormValues = {
   wealthSources: [defaultWealthSourceRow],
   documents: [],
 };
+
+/* ------------------------------------------------------------------ */
+/*  Dynamic, rules-driven schema                                       */
+/*                                                                     */
+/*  Builds a yup schema straight from the template's field `rules`     */
+/*  (required / maxlength / options / fk_model) and `field_type`, so   */
+/*  validation tracks the backend form-config instead of the static   */
+/*  schemas above. The static schemas remain as fallbacks for buckets  */
+/*  the template does not describe.                                    */
+/* ------------------------------------------------------------------ */
+
+// eslint-disable-next-line ts/no-explicit-any
+type AnyFieldSchema = yup.Schema<any, any, any, any>;
+
+/** Build a single field validator from its `field_type` + `rules`. */
+function fieldSchema(field: IFrmField): AnyFieldSchema {
+  const required = !!field.rules?.required;
+  const max = field.rules?.maxlength;
+  const label = field.name || field.attr_name;
+
+  if (field.field_type === 'checkbox') {
+    return yup.boolean().default(false);
+  }
+
+  // Foreign-key selects and numeric inputs hold an integer pk or ''.
+  if (field.rules?.fk_model || field.field_type === 'number') {
+    return required
+      ? yup
+          .number()
+          .typeError(`${label} is required`)
+          .required(`${label} is required`)
+      : yup
+          .mixed<number | ''>()
+          .transform(v => (v === '' || v == null ? '' : v))
+          .default('');
+  }
+
+  if (field.field_type === 'multiselect') {
+    const arr = yup.array().of(yup.string().defined()).default([]);
+    return required ? arr.min(1, `${label} is required`) : arr;
+  }
+
+  if (field.field_type === 'select') {
+    const opts = (field.rules?.options ?? []).map(o => String(o.value));
+    let s = yup.string().trim();
+    if (opts.length) {
+      s = s.oneOf(required ? opts : ['', ...opts], `Select a valid ${label}`);
+    }
+    return required ? s.required(`${label} is required`) : s.default('');
+  }
+
+  // text / date / textarea (and anything else) → string
+  let s = yup.string().trim();
+  if (field.attr_name.includes('email')) {
+    s = s.email('Enter a valid email');
+  }
+  if (max) {
+    s = s.max(max, `${label} must be at most ${max} characters`);
+  }
+  return required ? s.required(`${label} is required`) : s.default('');
+}
+
+/** Assemble an object schema from the fields of one or more sub-sections. */
+function objectSchemaFromSubSects(subs: IFrmSubSect[]): AnyFieldSchema {
+  const shape: Record<string, AnyFieldSchema> = {};
+  for (const sub of subs) {
+    for (const field of visibleFields(sub)) {
+      // Upload fields contribute the binary (`file`) plus its mirror name.
+      if (field.rules?.upload) {
+        const required = !!field.rules?.required;
+        shape[field.attr_name] = required
+          ? yup.mixed<File>().nullable().required('A file is required')
+          : yup.mixed<File>().nullable().default(null);
+        shape.fileName = required
+          ? yup.string().required('A file is required')
+          : yup.string().default('');
+        continue;
+      }
+      shape[field.attr_name] = fieldSchema(field);
+    }
+  }
+  return yup.object(shape);
+}
+
+/**
+ * Build the full KYC form schema from a serialized template.
+ *
+ * Sub-sections are grouped by bucket (via `model_name`): single buckets feed
+ * the `profile` object, array buckets feed their repeatable row schema. Buckets
+ * the template omits fall back to the static schemas. Note: collection minimums
+ * (e.g. "at least one account") are NOT inferred — they are driven purely by
+ * the template's field rules.
+ */
+export function buildKycSchema(
+  template: IFrmTmplSerialized,
+): yup.ObjectSchema<IKycFormValues> {
+  const sections = visibleSections(template.form_sections ?? []);
+
+  const profileSubs: IFrmSubSect[] = [];
+  const arraySubs: Partial<Record<KycArrayBucket, IFrmSubSect[]>> = {};
+
+  for (const section of sections) {
+    for (const sub of visibleSubSects(section)) {
+      const bucket = bucketForSubSect(sub);
+      if (bucket === 'remarks') continue;
+      if (isArrayBucket(bucket)) {
+        (arraySubs[bucket] ??= []).push(sub);
+      }
+      else {
+        profileSubs.push(sub);
+      }
+    }
+  }
+
+  const arrayOf = (bucket: KycArrayBucket, fallback: AnyFieldSchema) => {
+    const subs = arraySubs[bucket];
+    return subs?.length
+      ? yup.array().of(objectSchemaFromSubSects(subs)).default([])
+      : yup.array().of(fallback).default([]);
+  };
+
+  return yup.object({
+    profile: profileSubs.length
+      ? objectSchemaFromSubSects(profileSubs)
+      : profileSchema,
+    addresses: arrayOf('addresses', addressRowSchema),
+    accounts: arrayOf('accounts', accountRowSchema),
+    wealthSources: arrayOf('wealthSources', wealthSourceRowSchema),
+    documents: arrayOf('documents', documentSchema),
+  }) as unknown as yup.ObjectSchema<IKycFormValues>;
+}

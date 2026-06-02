@@ -22,7 +22,11 @@ import {
   Typography,
 } from '@mui/material';
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  useGetFormTmplLatestQuery,
+  useLazySerializeFormTemplateQuery,
+} from '~/lib/store/features/apiConf';
 import {
   useAdvanceWorkflowMutation,
   useCancelWorkflowMutation,
@@ -49,6 +53,7 @@ import {
   useUpdateCoreProfileMutation,
   useUploadTaskDocumentMutation,
 } from '~/lib/store/features/apiKyc';
+import type { IFrmTmplSerialized } from '~/lib/types/conf';
 import type {
   IKycFormValues,
   IWorkflowInstance,
@@ -246,6 +251,37 @@ export default function KycReviewWizard({ taskId }: KycReviewWizardProps) {
 
   const isMakerActive
     = currentStage?.status === 'Active' && currentStage.stage_type === 'Maker';
+
+  /* ---- Config-driven form template (FrmTmpl) for the Maker stage ---- */
+  const taskType = taskData?.task_type;
+  const { data: latestTemplate, isLoading: templateLoading }
+    = useGetFormTmplLatestQuery(
+      { task_type: String(taskType) },
+      { skip: !taskType || !isMakerActive },
+    );
+  const [serializeTemplate, { data: serializedTemplate }]
+    = useLazySerializeFormTemplateQuery();
+
+  // The `latest` endpoint returns the flattened `json_config`; if it has not
+  // been materialised yet, force a serialize-and-save to populate it.
+  useEffect(() => {
+    if (
+      latestTemplate?.id != null
+      && !latestTemplate.json_config?.form_sections?.length
+    ) {
+      void serializeTemplate(latestTemplate.id);
+    }
+  }, [latestTemplate, serializeTemplate]);
+
+  const makerTemplate: IFrmTmplSerialized | undefined = useMemo(() => {
+    if (serializedTemplate?.json_config?.form_sections?.length) {
+      return serializedTemplate.json_config;
+    }
+    if (latestTemplate?.json_config?.form_sections?.length) {
+      return latestTemplate.json_config;
+    }
+    return undefined;
+  }, [serializedTemplate, latestTemplate]);
 
   /* ---- Handlers ---- */
   const notify = (severity: 'success' | 'error', message: string) =>
@@ -644,13 +680,28 @@ export default function KycReviewWizard({ taskId }: KycReviewWizardProps) {
                 Maker — Capture KYC Review Details
               </Typography>
               <Divider sx={{ mb: 2 }} />
-              <MakerStageForm
-                initialValues={domainData}
-                countries={countries}
-                segments={segments}
-                submitting={busy}
-                onSubmit={handleMakerSubmit}
-              />
+              {templateLoading && (
+                <Stack alignItems="center" sx={{ py: 4 }}>
+                  <CircularProgress size={28} />
+                </Stack>
+              )}
+              {!templateLoading && !makerTemplate && (
+                <Alert severity="warning">
+                  No active form template is configured for this task type. A
+                  template must be published before the Maker can capture
+                  review details.
+                </Alert>
+              )}
+              {makerTemplate && (
+                <MakerStageForm
+                  template={makerTemplate}
+                  initialValues={domainData}
+                  countries={countries}
+                  segments={segments}
+                  submitting={busy}
+                  onSubmit={handleMakerSubmit}
+                />
+              )}
               <Divider sx={{ my: 2 }} />
               <Button
                 variant="text"

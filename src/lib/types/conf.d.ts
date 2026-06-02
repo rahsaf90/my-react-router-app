@@ -62,6 +62,19 @@ export interface IFrmFieldRules {
 
   if_has_value?: IRuleFieldCompare
 
+  /* ---- Seeded template rule keys (kyc.management seed_kyc_review_template) ---- */
+  /** When true, the owning sub-section is a repeatable (multi-row) collection. */
+  multi_row?: boolean
+  /** Static select options when the field is not backed by a foreign key. */
+  options?: { value: string, label: string }[]
+  /** Foreign-key model the select resolves against, e.g. `'conf.Country'`. */
+  fk_model?: string
+  /** When true, the field is a file upload (TaskDocument binary). */
+  upload?: boolean
+  /** Max input length hint for free-text fields (e.g. ISO currency = 3). */
+  maxlength?: number
+  /** Helper text rendered beneath the field. */
+  help?: string
 }
 
 export interface IFrmField extends IAbstractModel {

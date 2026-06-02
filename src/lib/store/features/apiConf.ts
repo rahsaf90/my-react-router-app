@@ -23,6 +23,15 @@ const extendedApi = apiBase.enhanceEndpoints({
       keepUnusedDataFor: 60 * 60, // 1 hour cache
       providesTags: (result, error, arg) => [{ type: 'FrmTmplByType', id: arg.task_type }],
     }),
+    /**
+     * Forces the backend to (re)build and persist `json_config` from the
+     * relational form definition, returning the populated template. Used as a
+     * fallback when `getFormTmplLatest` yields an empty `json_config`.
+     */
+    serializeFormTemplate: builder.query<IFrmTmpl, number>({
+      query: id => '/frmtmpls/' + id + '/serialize_and_save/',
+      providesTags: (result, error, id) => [{ type: 'FrmTmpl', id }],
+    }),
   }),
   overrideExisting: true,
 });
@@ -33,4 +42,6 @@ export const {
   useLazyGetFormTmplLatestQuery,
   useGetFormTemplateQuery,
   useLazyGetFormTemplateQuery,
+  useSerializeFormTemplateQuery,
+  useLazySerializeFormTemplateQuery,
 } = extendedApi;
