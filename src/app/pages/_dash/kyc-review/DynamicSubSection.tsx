@@ -1,38 +1,38 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
-    Alert,
-    Box,
-    Button,
-    Grid,
-    IconButton,
-    Stack,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Tooltip,
-    Typography,
+  Alert,
+  Box,
+  Button,
+  Grid,
+  IconButton,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tooltip,
+  Typography,
 } from '@mui/material';
 import {
-    useFieldArray,
-    type Control,
-    type FieldArrayPath,
-    type UseFormSetValue,
+  useFieldArray,
+  type Control,
+  type FieldArrayPath,
+  type UseFormSetValue,
 } from 'react-hook-form';
 import type { IFrmSubSect } from '~/lib/types/conf';
 import type { ICountry, IKycFormValues, ISegment } from '~/lib/types/kyc';
 import DynamicField from './DynamicField';
 import {
-    arrayBucketForSubSect,
-    isMultiRow,
-    profileFieldPath,
-    ROW_DEFAULTS,
-    rowFieldPath,
-    visibleFields,
-    type KycArrayBucket,
+  arrayBucketForSubSect,
+  isMultiRow,
+  profileFieldPath,
+  ROW_DEFAULTS,
+  rowFieldPath,
+  visibleFields,
+  type KycArrayBucket,
 } from './dynamicForm';
 
 interface DynamicSubSectionProps {
