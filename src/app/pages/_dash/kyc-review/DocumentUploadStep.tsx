@@ -2,39 +2,27 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import {
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  IconButton,
-  MenuItem,
-  Stack,
-  Typography,
+    Alert,
+    Button,
+    Card,
+    CardContent,
+    Chip,
+    IconButton,
+    MenuItem,
+    Stack,
+    Typography,
 } from '@mui/material';
 import { useRef } from 'react';
 import {
-  useFieldArray,
-  useWatch,
-  type Control,
-  type FieldErrors,
-  type UseFormSetValue,
+    useFieldArray,
+    useWatch,
+    type Control,
+    type FieldErrors,
+    type UseFormSetValue,
 } from 'react-hook-form';
 import { FormSelectField, FormTextField } from '~/components/ui/FormFields';
-import type { IKycFormValues, KycDocumentType } from '~/lib/types/kyc';
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-const DOC_TYPE_LABELS: Record<KycDocumentType, string> = {
-  passport: 'Passport',
-  national_id: 'National ID',
-  utility_bill: 'Utility Bill',
-  bank_statement: 'Bank Statement',
-  salary_slip: 'Salary Slip',
-  tax_return: 'Tax Return',
-  other: 'Other',
-};
+import type { IKycFormValues } from '~/lib/types/kyc';
+import { defaultDocument, DOCUMENT_TYPE_OPTIONS } from './schema';
 
 /* ------------------------------------------------------------------ */
 /*  Single document card                                               */
@@ -81,20 +69,28 @@ function DocumentCard({
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <FormSelectField<IKycFormValues>
               control={control}
-              name={`documents.${index}.documentType`}
+              name={`documents.${index}.doc_type`}
               label="Document Type"
               size="small"
               fullWidth
             >
-              {Object.entries(DOC_TYPE_LABELS).map(([value, label]) => (
-                <MenuItem key={value} value={value}>{label}</MenuItem>
+              {DOCUMENT_TYPE_OPTIONS.map(o => (
+                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
               ))}
             </FormSelectField>
 
             <FormTextField<IKycFormValues>
               control={control}
-              name={`documents.${index}.notes`}
-              label="Notes (optional)"
+              name={`documents.${index}.title`}
+              label="Title (optional)"
+              size="small"
+              fullWidth
+            />
+
+            <FormTextField<IKycFormValues>
+              control={control}
+              name={`documents.${index}.remarks`}
+              label="Remarks (optional)"
               size="small"
               fullWidth
             />
@@ -174,13 +170,7 @@ export default function DocumentUploadStep({
         <Button
           variant="outlined"
           startIcon={<CloudUploadIcon />}
-          onClick={() =>
-            append({
-              documentType: 'passport',
-              fileName: '',
-              file: null,
-              notes: '',
-            })}
+          onClick={() => append(defaultDocument)}
         >
           Add Document
         </Button>

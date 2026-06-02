@@ -1,111 +1,274 @@
 import type { IAPIListResponse } from '~/lib/types/common';
 import type {
-  IKycFormValues,
-  IKycReview,
-  KycWorkflowAction,
-  IKycWorkflowState,
+    ICoreProfile,
+    ICoreProfileCreate,
+    ICountry,
+    ICusAccount,
+    ICusAccountCreate,
+    ICustomerAddress,
+    ICustomerAddressCreate,
+    IKycTask,
+    ISegment,
+    ISourceOfWealth,
+    ISourceOfWealthCreate,
+    ITaskDocument,
+    ITaskDocumentUpload,
+    IWorkflowAdvanceInput,
+    IWorkflowCancelInput,
+    IWorkflowDefinition,
+    IWorkflowInstance,
+    IWorkflowRollbackInput,
+    IWorkflowStartInput,
+    IWorkflowTransitionLog,
 } from '~/lib/types/kyc';
 import { apiBase } from './apiBase';
 
+/**
+ * KYC review workflow API.
+ *
+ * Wraps the CusReview `workflow` app endpoints (DRF router):
+ *   - workflowdefinitions/
+ *   - workflowinstances/                       (list / retrieve)
+ *   - workflowinstances/start/                 (POST)
+ *   - workflowinstances/{id}/advance/          (POST approve|reject)
+ *   - workflowinstances/{id}/rollback/         (POST rework)
+ *   - workflowinstances/{id}/cancel/           (POST)
+ *   - workflowinstances/{id}/logs/             (GET audit trail)
+ */
 const extendedApiKyc = apiBase
-  .enhanceEndpoints({ addTagTypes: ['KycReview', 'KycWorkflow'] })
+  .enhanceEndpoints({
+    addTagTypes: [
+      'WorkflowInstance',
+      'WorkflowLog',
+      'WorkflowDefinition',
+      'CoreProfile',
+      'CusAccount',
+      'SourceOfWealth',
+      'TaskDocument',
+      'CustomerAddress',
+    ],
+  })
   .injectEndpoints({
     endpoints: builder => ({
-
-      /* ---- List / Read ---- */
-      getKycReviews: builder.query<
-        IAPIListResponse<IKycReview>,
-        { page?: number, limit?: number }
+      /* ---- Workflow definitions (blueprints) ---- */
+      getWorkflowDefinitions: builder.query<
+        IAPIListResponse<IWorkflowDefinition>,
+        { activeOnly?: boolean } | void
       >({
-        query: ({ page = 1, limit = 20 }) =>
-          `kyc/reviews/?offset=${(page - 1) * limit}&limit=${limit}`,
+        query: (args) => {
+          const activeOnly = args?.activeOnly ?? true;
+          return `workflowdefinitions/?is_active=${activeOnly}`;
+        },
         providesTags: response =>
           response
-            ? response.results.map(({ id }) => ({ type: 'KycReview', id }))
-            : [{ type: 'KycReview' }],
+            ? response.results.map(({ id }) => ({ type: 'WorkflowDefinition' as const, id }))
+            : [{ type: 'WorkflowDefinition' as const }],
       }),
 
-      getKycReview: builder.query<IKycReview, string>({
-        query: id => `kyc/reviews/${id}/`,
-        providesTags: (_result, _error, id) => [{ type: 'KycReview', id }],
+      /* ---- Workflow instances ---- */
+      getWorkflowInstances: builder.query<
+        IAPIListResponse<IWorkflowInstance>,
+        { taskId?: string, status?: string } | void
+      >({
+        query: (args) => {
+          const params = new URLSearchParams();
+          if (args?.taskId) params.set('task', args.taskId);
+          if (args?.status) params.set('status', args.status);
+          const qs = params.toString();
+          return `workflowinstances/${qs ? `?${qs}` : ''}`;
+        },
+        providesTags: response =>
+          response
+            ? [
+                ...response.results.map(({ id }) => ({ type: 'WorkflowInstance' as const, id })),
+                { type: 'WorkflowInstance' as const, id: 'LIST' },
+              ]
+            : [{ type: 'WorkflowInstance' as const, id: 'LIST' }],
       }),
 
-      /* ---- Create ---- */
-      createKycReview: builder.mutation<IKycReview, IKycFormValues>({
+      getWorkflowInstance: builder.query<IWorkflowInstance, number | string>({
+        query: id => `workflowinstances/${id}/`,
+        providesTags: (_result, _error, id) => [{ type: 'WorkflowInstance', id }],
+      }),
+
+      /* ---- Start a workflow for a task ---- */
+      startWorkflow: builder.mutation<IWorkflowInstance, IWorkflowStartInput>({
         query: body => ({
-          url: 'kyc/reviews/',
+          url: 'workflowinstances/start/',
           method: 'POST',
           body,
         }),
-        invalidatesTags: [{ type: 'KycReview' }],
+        invalidatesTags: [{ type: 'WorkflowInstance', id: 'LIST' }],
       }),
 
-      /* ---- Update (save draft) ---- */
-      updateKycReview: builder.mutation<
-        IKycReview,
-        { id: string, data: Partial<IKycFormValues> }
+      /* ---- Advance the current stage (approve / reject) ---- */
+      advanceWorkflow: builder.mutation<
+        IWorkflowInstance,
+        { instanceId: number | string } & IWorkflowAdvanceInput
       >({
-        query: ({ id, data }) => ({
-          url: `kyc/reviews/${id}/`,
-          method: 'PATCH',
-          body: data,
-        }),
-        invalidatesTags: (_result, _error, { id }) => [
-          { type: 'KycReview', id },
-        ],
-      }),
-
-      /* ---- Document upload ---- */
-      uploadKycDocument: builder.mutation<
-        { id: number, fileUrl: string, fileName: string },
-        { reviewId: string, file: File, documentType: string, notes: string }
-      >({
-        query: ({ reviewId, file, documentType, notes }) => {
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('document_type', documentType);
-          formData.append('notes', notes);
-          return {
-            url: `kyc/reviews/${reviewId}/documents/`,
-            method: 'POST',
-            body: formData,
-          };
-        },
-        invalidatesTags: (_result, _error, { reviewId }) => [
-          { type: 'KycReview', id: reviewId },
-        ],
-      }),
-
-      /* ---- Workflow endpoints (from CusReview backend) ---- */
-      getKycWorkflowState: builder.query<IKycWorkflowState, string>({
-        query: reviewId => `kyc/reviews/${reviewId}/workflow/`,
-        providesTags: (_result, _error, id) => [{ type: 'KycWorkflow', id }],
-      }),
-
-      performKycWorkflowAction: builder.mutation<
-        IKycReview,
-        { reviewId: string, action: KycWorkflowAction, notes?: string }
-      >({
-        query: ({ reviewId, action, notes }) => ({
-          url: `kyc/reviews/${reviewId}/workflow/`,
+        query: ({ instanceId, decision, remarks, metadata }) => ({
+          url: `workflowinstances/${instanceId}/advance/`,
           method: 'POST',
-          body: { action, notes },
+          body: {
+            decision,
+            remarks: remarks ?? '',
+            ...(metadata ? { metadata } : {}),
+          },
         }),
-        invalidatesTags: (_result, _error, { reviewId }) => [
-          { type: 'KycReview', id: reviewId },
-          { type: 'KycWorkflow', id: reviewId },
+        invalidatesTags: (_result, _error, { instanceId }) => [
+          { type: 'WorkflowInstance', id: instanceId },
+          { type: 'WorkflowInstance', id: 'LIST' },
+          { type: 'WorkflowLog', id: instanceId },
         ],
+      }),
+
+      /* ---- Rollback a stage (rework) ---- */
+      rollbackWorkflow: builder.mutation<
+        IWorkflowInstance,
+        { instanceId: number | string } & IWorkflowRollbackInput
+      >({
+        query: ({ instanceId, stage_instance_id, remarks }) => ({
+          url: `workflowinstances/${instanceId}/rollback/`,
+          method: 'POST',
+          body: { stage_instance_id, remarks: remarks ?? '' },
+        }),
+        invalidatesTags: (_result, _error, { instanceId }) => [
+          { type: 'WorkflowInstance', id: instanceId },
+          { type: 'WorkflowInstance', id: 'LIST' },
+          { type: 'WorkflowLog', id: instanceId },
+        ],
+      }),
+
+      /* ---- Cancel a workflow ---- */
+      cancelWorkflow: builder.mutation<
+        IWorkflowInstance,
+        { instanceId: number | string } & IWorkflowCancelInput
+      >({
+        query: ({ instanceId, remarks }) => ({
+          url: `workflowinstances/${instanceId}/cancel/`,
+          method: 'POST',
+          body: { remarks: remarks ?? '' },
+        }),
+        invalidatesTags: (_result, _error, { instanceId }) => [
+          { type: 'WorkflowInstance', id: instanceId },
+          { type: 'WorkflowInstance', id: 'LIST' },
+          { type: 'WorkflowLog', id: instanceId },
+        ],
+      }),
+
+      /* ---- Audit trail (transition logs) ---- */
+      getWorkflowLogs: builder.query<IWorkflowTransitionLog[], number | string>({
+        query: instanceId => `workflowinstances/${instanceId}/logs/`,
+        providesTags: (_result, _error, instanceId) => [
+          { type: 'WorkflowLog', id: instanceId },
+        ],
+      }),
+
+      /* ================================================================ */
+      /*  Reference data (conf app) – used to populate FK dropdowns       */
+      /* ================================================================ */
+      getTask: builder.query<IKycTask, string>({
+        query: id => `tasks/${id}/`,
+      }),
+
+      getCountries: builder.query<IAPIListResponse<ICountry>, void>({
+        query: () => 'countries/?page_size=100&ordering=name',
+      }),
+
+      getSegments: builder.query<IAPIListResponse<ISegment>, void>({
+        query: () => 'segments/?page_size=100&ordering=name',
+      }),
+
+      /* ================================================================ */
+      /*  KYC domain resources (kyc app)                                  */
+      /*  NB: these viewsets define no `filterset_fields`, so server-side */
+      /*  filtering by `?task=`/`?profile=` is ignored. Callers must      */
+      /*  fetch the list and filter client-side.                          */
+      /* ================================================================ */
+      getCoreProfiles: builder.query<IAPIListResponse<ICoreProfile>, void>({
+        query: () => 'coreprofiles/?page_size=100',
+        providesTags: [{ type: 'CoreProfile', id: 'LIST' }],
+      }),
+
+      createCoreProfile: builder.mutation<ICoreProfile, ICoreProfileCreate>({
+        query: body => ({ url: 'coreprofiles/', method: 'POST', body }),
+        invalidatesTags: [{ type: 'CoreProfile', id: 'LIST' }],
+      }),
+
+      getCusAccounts: builder.query<IAPIListResponse<ICusAccount>, void>({
+        query: () => 'cusaccounts/?page_size=100',
+        providesTags: [{ type: 'CusAccount', id: 'LIST' }],
+      }),
+
+      createCusAccount: builder.mutation<ICusAccount, ICusAccountCreate>({
+        query: body => ({ url: 'cusaccounts/', method: 'POST', body }),
+        invalidatesTags: [{ type: 'CusAccount', id: 'LIST' }],
+      }),
+
+      getSourcesOfWealth: builder.query<IAPIListResponse<ISourceOfWealth>, void>({
+        query: () => 'sourcesofwealth/?page_size=100',
+        providesTags: [{ type: 'SourceOfWealth', id: 'LIST' }],
+      }),
+
+      createSourceOfWealth: builder.mutation<ISourceOfWealth, ISourceOfWealthCreate>({
+        query: body => ({ url: 'sourcesofwealth/', method: 'POST', body }),
+        invalidatesTags: [{ type: 'SourceOfWealth', id: 'LIST' }],
+      }),
+
+      createCustomerAddress: builder.mutation<ICustomerAddress, ICustomerAddressCreate>({
+        query: body => ({ url: 'customeraddresses/', method: 'POST', body }),
+        invalidatesTags: [{ type: 'CustomerAddress', id: 'LIST' }],
+      }),
+
+      getCustomerAddresses: builder.query<IAPIListResponse<ICustomerAddress>, void>({
+        query: () => 'customeraddresses/?page_size=100',
+        providesTags: [{ type: 'CustomerAddress', id: 'LIST' }],
+      }),
+
+      getTaskDocuments: builder.query<IAPIListResponse<ITaskDocument>, void>({
+        query: () => 'taskdocuments/?page_size=100',
+        providesTags: [{ type: 'TaskDocument', id: 'LIST' }],
+      }),
+
+      /* Multipart upload – body is FormData so fetchBaseQuery leaves the
+         Content-Type unset and the browser sets the multipart boundary. */
+      uploadTaskDocument: builder.mutation<ITaskDocument, ITaskDocumentUpload>({
+        query: ({ file, org, task, doc_type, title, remarks }) => {
+          const formData = new FormData();
+          formData.append('org', String(org));
+          formData.append('task', task);
+          formData.append('doc_type', doc_type);
+          if (title) formData.append('title', title);
+          if (remarks) formData.append('remarks', remarks);
+          formData.append('file', file, file.name);
+          return { url: 'taskdocuments/', method: 'POST', body: formData };
+        },
+        invalidatesTags: [{ type: 'TaskDocument', id: 'LIST' }],
       }),
     }),
     overrideExisting: false,
   });
 
 export const {
-  useGetKycReviewsQuery,
-  useGetKycReviewQuery,
-  useCreateKycReviewMutation,
-  useUpdateKycReviewMutation,
-  useUploadKycDocumentMutation,
-  useGetKycWorkflowStateQuery,
-  usePerformKycWorkflowActionMutation,
+  useGetWorkflowDefinitionsQuery,
+  useGetWorkflowInstancesQuery,
+  useGetWorkflowInstanceQuery,
+  useStartWorkflowMutation,
+  useAdvanceWorkflowMutation,
+  useRollbackWorkflowMutation,
+  useCancelWorkflowMutation,
+  useGetWorkflowLogsQuery,
+  useGetTaskQuery,
+  useGetCountriesQuery,
+  useGetSegmentsQuery,
+  useGetCoreProfilesQuery,
+  useCreateCoreProfileMutation,
+  useGetCusAccountsQuery,
+  useCreateCusAccountMutation,
+  useGetSourcesOfWealthQuery,
+  useCreateSourceOfWealthMutation,
+  useCreateCustomerAddressMutation,
+  useGetCustomerAddressesQuery,
+  useGetTaskDocumentsQuery,
+  useUploadTaskDocumentMutation,
 } = extendedApiKyc;

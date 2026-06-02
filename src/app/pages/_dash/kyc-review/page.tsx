@@ -1,5 +1,8 @@
+import { useSearchParams } from 'react-router';
 import KycReviewWizard from './KycReviewWizard';
 
 export default function KycReviewPage() {
-  return <KycReviewWizard />;
+  const [searchParams] = useSearchParams();
+  const taskId = searchParams.get('task') ?? undefined;
+  return <KycReviewWizard taskId={taskId} />;
 }

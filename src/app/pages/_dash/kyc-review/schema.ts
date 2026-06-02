@@ -1,96 +1,204 @@
 import * as yup from 'yup';
-import type { IKycFormValues } from '~/lib/types/kyc';
+import type {
+    IKycAccountForm,
+    IKycAddressForm,
+    IKycDocumentForm,
+    IKycFormValues,
+    IKycProfileForm,
+    IKycWealthSourceForm,
+} from '~/lib/types/kyc';
 
 /* ------------------------------------------------------------------ */
-/*  Step 1 – Customer basic information                                */
+/*  Backend choice values (mirror kyc.models.core TextChoices)         */
 /* ------------------------------------------------------------------ */
-export const customerInfoSchema = yup.object({
-  fullName: yup.string().trim().required('Full name is required'),
-  dateOfBirth: yup.string().trim().required('Date of birth is required'),
-  nationality: yup.string().trim().required('Nationality is required'),
-  nationalId: yup.string().trim().required('National / passport ID is required'),
-  gender: yup
+export const GENDER_OPTIONS = [
+  { value: 'M', label: 'Male' },
+  { value: 'F', label: 'Female' },
+  { value: 'O', label: 'Other' },
+] as const;
+
+export const MARITAL_STATUS_OPTIONS = [
+  { value: 'Single', label: 'Single' },
+  { value: 'Married', label: 'Married' },
+  { value: 'Divorced', label: 'Divorced' },
+  { value: 'Widowed', label: 'Widowed' },
+  { value: 'Other', label: 'Other' },
+] as const;
+
+export const ADDRESS_TYPE_OPTIONS = [
+  { value: 'Residence', label: 'Residence' },
+  { value: 'Mailing', label: 'Mailing' },
+  { value: 'Permanent', label: 'Permanent' },
+  { value: 'Registered', label: 'Registered' },
+  { value: 'Work', label: 'Work' },
+] as const;
+
+export const ACCOUNT_TYPE_OPTIONS = [
+  { value: 'Savings', label: 'Savings' },
+  { value: 'Current', label: 'Current' },
+  { value: 'TermDeposit', label: 'Term Deposit' },
+  { value: 'Loan', label: 'Loan' },
+  { value: 'CreditCard', label: 'Credit Card' },
+  { value: 'Investment', label: 'Investment' },
+  { value: 'Other', label: 'Other' },
+] as const;
+
+export const ACCOUNT_STATUS_OPTIONS = [
+  { value: 'Active', label: 'Active' },
+  { value: 'Dormant', label: 'Dormant' },
+  { value: 'Closed', label: 'Closed' },
+  { value: 'Blocked', label: 'Blocked' },
+] as const;
+
+export const WEALTH_SOURCE_OPTIONS = [
+  { value: 'Salary', label: 'Salary / Employment Income' },
+  { value: 'Business', label: 'Business Income' },
+  { value: 'Investment', label: 'Investment Returns' },
+  { value: 'Inheritance', label: 'Inheritance' },
+  { value: 'Gift', label: 'Gift' },
+  { value: 'Savings', label: 'Personal Savings' },
+  { value: 'SaleOfAsset', label: 'Sale of Asset' },
+  { value: 'Loan', label: 'Loan / Borrowing' },
+  { value: 'Other', label: 'Other' },
+] as const;
+
+export const DOCUMENT_TYPE_OPTIONS = [
+  { value: 'Passport', label: 'Passport' },
+  { value: 'NationalID', label: 'National ID' },
+  { value: 'DriversLicense', label: 'Driver\'s License' },
+  { value: 'UtilityBill', label: 'Utility Bill' },
+  { value: 'BankStatement', label: 'Bank Statement' },
+  { value: 'Payslip', label: 'Payslip' },
+  { value: 'TaxReturn', label: 'Tax Return' },
+  { value: 'ProofOfAddress', label: 'Proof of Address' },
+  { value: 'ProofOfIncome', label: 'Proof of Income' },
+  { value: 'Other', label: 'Other' },
+] as const;
+
+/* An optional foreign-key / numeric select: holds an integer pk or ''. */
+const optionalNumeric = yup
+  .mixed<number | ''>()
+  .transform(value => (value === '' || value == null ? '' : value))
+  .default('');
+
+/* ------------------------------------------------------------------ */
+/*  Step 1 – Core profile (demographics, contact, passport)            */
+/* ------------------------------------------------------------------ */
+export const profileSchema = yup.object({
+  name: yup.string().trim().required('Full name is required'),
+  cus_id: yup.string().trim().default(''),
+  first_name: yup.string().trim().default(''),
+  middle_name: yup.string().trim().default(''),
+  last_name: yup.string().trim().default(''),
+  dob: yup.string().trim().default(''),
+  gender: yup.string().oneOf(['', 'M', 'F', 'O']).default(''),
+  marital_status: yup
     .string()
-    .oneOf(['male', 'female', 'other'], 'Select a valid gender')
-    .required('Gender is required'),
-  email: yup.string().trim().email('Enter a valid email').required('Email is required'),
-  phone: yup.string().trim().required('Phone number is required'),
-  address: yup.string().trim().required('Address is required'),
-  city: yup.string().trim().required('City is required'),
-  country: yup.string().trim().required('Country is required'),
-  postalCode: yup.string().trim().required('Postal code is required'),
-  occupation: yup.string().trim().required('Occupation is required'),
-  employerName: yup.string().trim().default(''),
+    .oneOf(['', 'Single', 'Married', 'Divorced', 'Widowed', 'Other'])
+    .default(''),
+  nationality: optionalNumeric,
+  country_of_birth: optionalNumeric,
+  occupation: yup.string().trim().default(''),
+  employer_name: yup.string().trim().default(''),
+  mobile: yup.string().trim().default(''),
+  email: yup.string().trim().email('Enter a valid email').default(''),
+  address: yup.string().trim().default(''),
+  country: optionalNumeric,
+  state: optionalNumeric,
+  city: yup.string().trim().default(''),
+  zipcode: yup.string().trim().default(''),
+  passport_no: yup.string().trim().default(''),
+  passport_country: optionalNumeric,
+  passport_issue_date: yup.string().trim().default(''),
+  passport_expiry_date: yup.string().trim().default(''),
 });
 
 /* ------------------------------------------------------------------ */
-/*  Step 2 – Account details (multi-row)                               */
+/*  Step 2 – Addresses (kyc.CustomerAddress, multi-row)                */
+/*  `country` is required by the backend for every address row.        */
+/* ------------------------------------------------------------------ */
+export const addressRowSchema = yup.object({
+  address_type: yup
+    .string()
+    .oneOf(['Residence', 'Mailing', 'Permanent', 'Registered', 'Work'])
+    .required('Select an address type'),
+  line1: yup.string().trim().required('Address line 1 is required'),
+  line2: yup.string().trim().default(''),
+  city: yup.string().trim().required('City is required'),
+  state: yup.string().trim().default(''),
+  zipcode: yup.string().trim().default(''),
+  country: yup
+    .number()
+    .typeError('Country is required')
+    .required('Country is required'),
+  is_primary: yup.boolean().default(false),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Step 3 – Accounts (kyc.CusAccount, multi-row)                      */
 /* ------------------------------------------------------------------ */
 export const accountRowSchema = yup.object({
-  accountNumber: yup.string().trim().required('Account number is required'),
-  accountType: yup
+  acc_num: yup.string().trim().required('Account number is required'),
+  acc_type: yup
     .string()
-    .oneOf(['savings', 'current', 'fixed_deposit', 'loan', 'credit_card'], 'Select account type')
+    .oneOf([
+      'Savings', 'Current', 'TermDeposit', 'Loan',
+      'CreditCard', 'Investment', 'Other',
+    ])
     .required('Account type is required'),
+  acc_name: yup.string().trim().required('Account name is required'),
   currency: yup.string().trim().required('Currency is required'),
-  branchName: yup.string().trim().required('Branch name is required'),
-  openingDate: yup.string().trim().required('Opening date is required'),
-  averageBalance: yup
-    .number()
-    .typeError('Must be a number')
-    .min(0, 'Cannot be negative')
-    .required('Average balance is required'),
+  balance: optionalNumeric,
+  branch: yup.string().trim().default(''),
+  opened_date: yup.string().trim().default(''),
   status: yup
     .string()
-    .oneOf(['active', 'dormant', 'closed'], 'Select account status')
+    .oneOf(['Active', 'Dormant', 'Closed', 'Blocked'])
     .required('Status is required'),
 });
 
 /* ------------------------------------------------------------------ */
-/*  Step 3 – Sources of wealth (multi-row)                             */
+/*  Step 4 – Sources of wealth (kyc.SourceOfWealth, multi-row)         */
 /* ------------------------------------------------------------------ */
 export const wealthSourceRowSchema = yup.object({
-  sourceType: yup
+  source_type: yup
     .string()
-    .oneOf(
-      ['employment', 'business', 'inheritance', 'investment', 'property', 'gift', 'other'],
-      'Select source type',
-    )
+    .oneOf([
+      'Salary', 'Business', 'Investment', 'Inheritance', 'Gift',
+      'Savings', 'SaleOfAsset', 'Loan', 'Other',
+    ])
     .required('Source type is required'),
-  description: yup.string().trim().required('Description is required'),
-  estimatedValue: yup
-    .number()
-    .typeError('Must be a number')
-    .min(0, 'Cannot be negative')
-    .required('Estimated value is required'),
+  description: yup.string().trim().default(''),
+  amount: optionalNumeric,
   currency: yup.string().trim().required('Currency is required'),
-  evidenceProvided: yup.string().trim().default(''),
+  country: optionalNumeric,
+  proof_ref: yup.string().trim().default(''),
 });
 
 /* ------------------------------------------------------------------ */
-/*  Step 4 – Documents                                                 */
+/*  Step 5 – Documents (kyc.TaskDocument, multi-row file uploads)      */
 /* ------------------------------------------------------------------ */
 export const documentSchema = yup.object({
-  documentType: yup
+  doc_type: yup
     .string()
-    .oneOf(
-      [
-        'passport', 'national_id', 'utility_bill',
-        'bank_statement', 'salary_slip', 'tax_return', 'other',
-      ],
-      'Select document type',
-    )
+    .oneOf([
+      'Passport', 'NationalID', 'DriversLicense', 'UtilityBill',
+      'BankStatement', 'Payslip', 'TaxReturn', 'ProofOfAddress',
+      'ProofOfIncome', 'Other',
+    ])
     .required('Document type is required'),
-  fileName: yup.string().trim().required('File is required'),
-  file: yup.mixed<File>().nullable().required('File is required'),
-  notes: yup.string().trim().default(''),
+  title: yup.string().trim().default(''),
+  file: yup.mixed<File>().nullable().required('A file is required'),
+  fileName: yup.string().trim().required('A file is required'),
+  remarks: yup.string().trim().default(''),
 });
 
 /* ------------------------------------------------------------------ */
 /*  Full form schema                                                   */
 /* ------------------------------------------------------------------ */
 export const kycFormSchema = yup.object({
-  customerInfo: customerInfoSchema,
+  profile: profileSchema,
+  addresses: yup.array().of(addressRowSchema).default([]),
   accounts: yup
     .array()
     .of(accountRowSchema)
@@ -101,59 +209,80 @@ export const kycFormSchema = yup.object({
     .of(wealthSourceRowSchema)
     .min(1, 'Add at least one source of wealth')
     .required(),
-  documents: yup
-    .array()
-    .of(documentSchema)
-    .min(1, 'Upload at least one document')
-    .required(),
+  documents: yup.array().of(documentSchema).default([]),
 });
 
 /* ------------------------------------------------------------------ */
 /*  Default values                                                     */
 /* ------------------------------------------------------------------ */
-export const defaultCustomerInfo: IKycFormValues['customerInfo'] = {
-  fullName: '',
-  dateOfBirth: '',
-  nationality: '',
-  nationalId: '',
+export const defaultProfile: IKycProfileForm = {
+  name: '',
+  cus_id: '',
+  first_name: '',
+  middle_name: '',
+  last_name: '',
+  dob: '',
   gender: '',
-  email: '',
-  phone: '',
-  address: '',
-  city: '',
-  country: '',
-  postalCode: '',
+  marital_status: '',
+  nationality: '',
+  country_of_birth: '',
   occupation: '',
-  employerName: '',
+  employer_name: '',
+  mobile: '',
+  email: '',
+  address: '',
+  country: '',
+  state: '',
+  city: '',
+  zipcode: '',
+  passport_no: '',
+  passport_country: '',
+  passport_issue_date: '',
+  passport_expiry_date: '',
 };
 
-export const defaultAccountRow: IKycFormValues['accounts'][number] = {
-  accountNumber: '',
-  accountType: '',
+export const defaultAddressRow: IKycAddressForm = {
+  address_type: 'Residence',
+  line1: '',
+  line2: '',
+  city: '',
+  state: '',
+  zipcode: '',
+  country: '',
+  is_primary: true,
+};
+
+export const defaultAccountRow: IKycAccountForm = {
+  acc_num: '',
+  acc_type: 'Savings',
+  acc_name: '',
   currency: 'USD',
-  branchName: '',
-  openingDate: '',
-  averageBalance: 0,
-  status: 'active',
+  balance: '',
+  branch: '',
+  opened_date: '',
+  status: 'Active',
 };
 
-export const defaultWealthSourceRow: IKycFormValues['wealthSources'][number] = {
-  sourceType: '',
+export const defaultWealthSourceRow: IKycWealthSourceForm = {
+  source_type: 'Salary',
   description: '',
-  estimatedValue: 0,
+  amount: '',
   currency: 'USD',
-  evidenceProvided: '',
+  country: '',
+  proof_ref: '',
 };
 
-export const defaultDocument: IKycFormValues['documents'][number] = {
-  documentType: 'passport',
-  fileName: '',
+export const defaultDocument: IKycDocumentForm = {
+  doc_type: 'Passport',
+  title: '',
   file: null,
-  notes: '',
+  fileName: '',
+  remarks: '',
 };
 
 export const kycFormDefaults: IKycFormValues = {
-  customerInfo: defaultCustomerInfo,
+  profile: defaultProfile,
+  addresses: [],
   accounts: [defaultAccountRow],
   wealthSources: [defaultWealthSourceRow],
   documents: [],

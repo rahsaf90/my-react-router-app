@@ -19,7 +19,7 @@ import {
 } from 'react-hook-form';
 import { FormSelectField, FormTextField } from '~/components/ui/FormFields';
 import type { IKycFormValues } from '~/lib/types/kyc';
-import { defaultAccountRow } from './schema';
+import { ACCOUNT_STATUS_OPTIONS, ACCOUNT_TYPE_OPTIONS, defaultAccountRow } from './schema';
 
 /* ------------------------------------------------------------------ */
 /*  Single row                                                         */
@@ -42,8 +42,17 @@ const AccountRow = memo(function AccountRow({
       <TableCell sx={{ minWidth: 160 }}>
         <FormTextField<IKycFormValues>
           control={control}
-          name={`accounts.${index}.accountNumber`}
+          name={`accounts.${index}.acc_num`}
           placeholder="Account #"
+          size="small"
+          fullWidth
+        />
+      </TableCell>
+      <TableCell sx={{ minWidth: 160 }}>
+        <FormTextField<IKycFormValues>
+          control={control}
+          name={`accounts.${index}.acc_name`}
+          placeholder="Account name"
           size="small"
           fullWidth
         />
@@ -51,16 +60,14 @@ const AccountRow = memo(function AccountRow({
       <TableCell sx={{ minWidth: 140 }}>
         <FormSelectField<IKycFormValues>
           control={control}
-          name={`accounts.${index}.accountType`}
+          name={`accounts.${index}.acc_type`}
           label="Type"
           size="small"
           fullWidth
         >
-          <MenuItem value="savings">Savings</MenuItem>
-          <MenuItem value="current">Current</MenuItem>
-          <MenuItem value="fixed_deposit">Fixed Deposit</MenuItem>
-          <MenuItem value="loan">Loan</MenuItem>
-          <MenuItem value="credit_card">Credit Card</MenuItem>
+          {ACCOUNT_TYPE_OPTIONS.map(o => (
+            <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+          ))}
         </FormSelectField>
       </TableCell>
       <TableCell sx={{ minWidth: 100 }}>
@@ -75,7 +82,7 @@ const AccountRow = memo(function AccountRow({
       <TableCell sx={{ minWidth: 140 }}>
         <FormTextField<IKycFormValues>
           control={control}
-          name={`accounts.${index}.branchName`}
+          name={`accounts.${index}.branch`}
           placeholder="Branch"
           size="small"
           fullWidth
@@ -84,7 +91,7 @@ const AccountRow = memo(function AccountRow({
       <TableCell sx={{ minWidth: 140 }}>
         <FormTextField<IKycFormValues>
           control={control}
-          name={`accounts.${index}.openingDate`}
+          name={`accounts.${index}.opened_date`}
           type="date"
           size="small"
           fullWidth
@@ -94,7 +101,7 @@ const AccountRow = memo(function AccountRow({
       <TableCell sx={{ minWidth: 130 }}>
         <FormTextField<IKycFormValues>
           control={control}
-          name={`accounts.${index}.averageBalance`}
+          name={`accounts.${index}.balance`}
           type="number"
           placeholder="Balance"
           size="small"
@@ -109,9 +116,9 @@ const AccountRow = memo(function AccountRow({
           size="small"
           fullWidth
         >
-          <MenuItem value="active">Active</MenuItem>
-          <MenuItem value="dormant">Dormant</MenuItem>
-          <MenuItem value="closed">Closed</MenuItem>
+          {ACCOUNT_STATUS_OPTIONS.map(o => (
+            <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+          ))}
         </FormSelectField>
       </TableCell>
       <TableCell align="right">
@@ -174,11 +181,12 @@ export default function AccountDetailsStep({
           <TableHead>
             <TableRow>
               <TableCell>Account #</TableCell>
+              <TableCell>Account Name</TableCell>
               <TableCell>Type</TableCell>
               <TableCell>Currency</TableCell>
               <TableCell>Branch</TableCell>
-              <TableCell>Opening Date</TableCell>
-              <TableCell>Avg Balance</TableCell>
+              <TableCell>Opened Date</TableCell>
+              <TableCell>Balance</TableCell>
               <TableCell>Status</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>

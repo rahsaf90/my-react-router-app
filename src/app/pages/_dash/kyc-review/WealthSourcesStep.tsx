@@ -1,25 +1,25 @@
 import {
-  Alert,
-  Button,
-  MenuItem,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
+    Alert,
+    Button,
+    MenuItem,
+    Stack,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Typography,
 } from '@mui/material';
 import { memo } from 'react';
 import {
-  useFieldArray,
-  type Control,
-  type FieldErrors,
+    useFieldArray,
+    type Control,
+    type FieldErrors,
 } from 'react-hook-form';
 import { FormSelectField, FormTextField } from '~/components/ui/FormFields';
-import type { IKycFormValues } from '~/lib/types/kyc';
-import { defaultWealthSourceRow } from './schema';
+import type { ICountry, IKycFormValues } from '~/lib/types/kyc';
+import { defaultWealthSourceRow, WEALTH_SOURCE_OPTIONS } from './schema';
 
 /* ------------------------------------------------------------------ */
 /*  Single row                                                         */
@@ -27,6 +27,7 @@ import { defaultWealthSourceRow } from './schema';
 interface WealthRowProps {
   index: number
   control: Control<IKycFormValues>
+  countries: ICountry[]
   canRemove: boolean
   onRemove: (i: number) => void
 }
@@ -34,26 +35,23 @@ interface WealthRowProps {
 const WealthRow = memo(function WealthRow({
   index,
   control,
+  countries,
   canRemove,
   onRemove,
 }: WealthRowProps) {
   return (
     <TableRow>
-      <TableCell sx={{ minWidth: 150 }}>
+      <TableCell sx={{ minWidth: 170 }}>
         <FormSelectField<IKycFormValues>
           control={control}
-          name={`wealthSources.${index}.sourceType`}
+          name={`wealthSources.${index}.source_type`}
           label="Source"
           size="small"
           fullWidth
         >
-          <MenuItem value="employment">Employment</MenuItem>
-          <MenuItem value="business">Business</MenuItem>
-          <MenuItem value="inheritance">Inheritance</MenuItem>
-          <MenuItem value="investment">Investment</MenuItem>
-          <MenuItem value="property">Property</MenuItem>
-          <MenuItem value="gift">Gift</MenuItem>
-          <MenuItem value="other">Other</MenuItem>
+          {WEALTH_SOURCE_OPTIONS.map(o => (
+            <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+          ))}
         </FormSelectField>
       </TableCell>
       <TableCell sx={{ minWidth: 200 }}>
@@ -68,9 +66,9 @@ const WealthRow = memo(function WealthRow({
       <TableCell sx={{ minWidth: 140 }}>
         <FormTextField<IKycFormValues>
           control={control}
-          name={`wealthSources.${index}.estimatedValue`}
+          name={`wealthSources.${index}.amount`}
           type="number"
-          placeholder="Value"
+          placeholder="Amount"
           size="small"
           fullWidth
         />
@@ -84,11 +82,25 @@ const WealthRow = memo(function WealthRow({
           fullWidth
         />
       </TableCell>
+      <TableCell sx={{ minWidth: 150 }}>
+        <FormSelectField<IKycFormValues>
+          control={control}
+          name={`wealthSources.${index}.country`}
+          label="Country"
+          size="small"
+          fullWidth
+        >
+          <MenuItem value=""><em>None</em></MenuItem>
+          {countries.map(c => (
+            <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+          ))}
+        </FormSelectField>
+      </TableCell>
       <TableCell sx={{ minWidth: 160 }}>
         <FormTextField<IKycFormValues>
           control={control}
-          name={`wealthSources.${index}.evidenceProvided`}
-          placeholder="Evidence details"
+          name={`wealthSources.${index}.proof_ref`}
+          placeholder="Proof reference"
           size="small"
           fullWidth
         />
@@ -114,11 +126,13 @@ const WealthRow = memo(function WealthRow({
 interface WealthSourcesStepProps {
   control: Control<IKycFormValues>
   errors: FieldErrors<IKycFormValues>
+  countries: ICountry[]
 }
 
 export default function WealthSourcesStep({
   control,
   errors,
+  countries,
 }: WealthSourcesStepProps) {
   const { fields, append, remove } = useFieldArray({
     control,
@@ -154,9 +168,10 @@ export default function WealthSourcesStep({
             <TableRow>
               <TableCell>Source Type</TableCell>
               <TableCell>Description</TableCell>
-              <TableCell>Estimated Value</TableCell>
+              <TableCell>Amount</TableCell>
               <TableCell>Currency</TableCell>
-              <TableCell>Evidence</TableCell>
+              <TableCell>Country</TableCell>
+              <TableCell>Proof Ref</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -166,6 +181,7 @@ export default function WealthSourcesStep({
                 key={field.rowId}
                 index={index}
                 control={control}
+                countries={countries}
                 canRemove={fields.length > 1}
                 onRemove={remove}
               />
