@@ -30,6 +30,9 @@ import {
   useCreateCusAccountMutation,
   useCreateCustomerAddressMutation,
   useCreateSourceOfWealthMutation,
+  useDeleteCusAccountMutation,
+  useDeleteCustomerAddressMutation,
+  useDeleteSourceOfWealthMutation,
   useGetCoreProfilesQuery,
   useGetCountriesQuery,
   useGetCusAccountsQuery,
@@ -43,6 +46,7 @@ import {
   useGetWorkflowLogsQuery,
   useRollbackWorkflowMutation,
   useStartWorkflowMutation,
+  useUpdateCoreProfileMutation,
   useUploadTaskDocumentMutation,
 } from '~/lib/store/features/apiKyc';
 import type {
@@ -156,9 +160,13 @@ export default function KycReviewWizard({ taskId }: KycReviewWizardProps) {
   const [rollbackWorkflow, { isLoading: rollingBack }] = useRollbackWorkflowMutation();
   const [cancelWorkflow, { isLoading: cancelling }] = useCancelWorkflowMutation();
   const [createCoreProfile] = useCreateCoreProfileMutation();
+  const [updateCoreProfile] = useUpdateCoreProfileMutation();
   const [createCustomerAddress] = useCreateCustomerAddressMutation();
+  const [deleteCustomerAddress] = useDeleteCustomerAddressMutation();
   const [createCusAccount] = useCreateCusAccountMutation();
+  const [deleteCusAccount] = useDeleteCusAccountMutation();
   const [createSourceOfWealth] = useCreateSourceOfWealthMutation();
+  const [deleteSourceOfWealth] = useDeleteSourceOfWealthMutation();
   const [uploadTaskDocument] = useUploadTaskDocumentMutation();
   const [persisting, setPersisting] = useState(false);
 
@@ -203,16 +211,38 @@ export default function KycReviewWizard({ taskId }: KycReviewWizardProps) {
     [profilesResp, taskId],
   );
 
+  const existingAddresses = useMemo(
+    () => (addressesResp?.results ?? []).filter(a => a.profile === coreProfile?.id),
+    [addressesResp, coreProfile],
+  );
+
+  const existingAccounts = useMemo(
+    () => (accountsResp?.results ?? []).filter(a => a.profile === coreProfile?.id),
+    [accountsResp, coreProfile],
+  );
+
+  const existingWealthSources = useMemo(
+    () => (wealthResp?.results ?? []).filter(w => w.profile === coreProfile?.id),
+    [wealthResp, coreProfile],
+  );
+
   const domainData: IKycFormValues | undefined = useMemo(() => {
     if (!coreProfile) return undefined;
     return domainToFormValues({
       profile: coreProfile,
-      addresses: (addressesResp?.results ?? []).filter(a => a.profile === coreProfile.id),
-      accounts: (accountsResp?.results ?? []).filter(a => a.profile === coreProfile.id),
-      wealthSources: (wealthResp?.results ?? []).filter(w => w.profile === coreProfile.id),
+      addresses: existingAddresses,
+      accounts: existingAccounts,
+      wealthSources: existingWealthSources,
       documents: (documentsResp?.results ?? []).filter(d => d.task === taskId),
     });
-  }, [coreProfile, addressesResp, accountsResp, wealthResp, documentsResp, taskId]);
+  }, [
+    coreProfile,
+    existingAddresses,
+    existingAccounts,
+    existingWealthSources,
+    documentsResp,
+    taskId,
+  ]);
 
   const isMakerActive
     = currentStage?.status === 'Active' && currentStage.stage_type === 'Maker';
@@ -266,23 +296,59 @@ export default function KycReviewWizard({ taskId }: KycReviewWizardProps) {
     }
 
     setPersisting(true);
-    try {
-      // 1. CoreProfile (one per task) — returns the profile id for children.
-      const profile = await createCoreProfile(
-        toCoreProfileCreate(payload.profile, org, taskId),
-      ).unwrap();
-      const profileId = profile.id;
-      if (profileId == null) throw new Error('CoreProfile created without an id');
+    let profileId: number | null = null;
+    let childRowsReplaced = false;
+    const createdAddressIds: number[] = [];
+    const createdAccountIds: number[] = [];
+    const createdWealthIds: number[] = [];
 
-      // 2. Child rows (addresses / accounts / sources of wealth).
+    const previousAddresses = existingAddresses.filter(a => a.id != null);
+    const previousAccounts = existingAccounts.filter(a => a.id != null);
+    const previousWealthSources = existingWealthSources.filter(w => w.id != null);
+
+    try {
+      // 1. Upsert CoreProfile (one per task) — returns profile id for children.
+      const profileBody = toCoreProfileCreate(payload.profile, org, taskId);
+      const profile = coreProfile?.id
+        ? await updateCoreProfile({ id: coreProfile.id, body: profileBody }).unwrap()
+        : await createCoreProfile(profileBody).unwrap();
+      profileId = profile.id ?? null;
+      if (profileId == null) throw new Error('CoreProfile created without an id');
+      const ensuredProfileId = profileId;
+
+      // 2. Replace child rows for idempotent rework/resubmit behavior.
       await Promise.all([
-        ...payload.addresses.map(a =>
-          createCustomerAddress(toCustomerAddressCreate(a, org, profileId)).unwrap()),
-        ...payload.accounts.map(a =>
-          createCusAccount(toCusAccountCreate(a, org, profileId)).unwrap()),
-        ...payload.wealthSources.map(w =>
-          createSourceOfWealth(toSourceOfWealthCreate(w, org, profileId)).unwrap()),
+        ...previousAddresses
+          .map(a => deleteCustomerAddress(a.id!).unwrap()),
+        ...previousAccounts
+          .map(a => deleteCusAccount(a.id!).unwrap()),
+        ...previousWealthSources
+          .map(w => deleteSourceOfWealth(w.id!).unwrap()),
       ]);
+
+      const newAddresses = await Promise.all(
+        payload.addresses.map(a =>
+          createCustomerAddress(toCustomerAddressCreate(a, org, ensuredProfileId)).unwrap()),
+      );
+      const newAccounts = await Promise.all(
+        payload.accounts.map(a =>
+          createCusAccount(toCusAccountCreate(a, org, ensuredProfileId)).unwrap()),
+      );
+      const newWealthSources = await Promise.all(
+        payload.wealthSources.map(w =>
+          createSourceOfWealth(toSourceOfWealthCreate(w, org, ensuredProfileId)).unwrap()),
+      );
+
+      createdAddressIds.push(...newAddresses
+        .map(a => a.id)
+        .filter((id): id is number => id != null));
+      createdAccountIds.push(...newAccounts
+        .map(a => a.id)
+        .filter((id): id is number => id != null));
+      createdWealthIds.push(...newWealthSources
+        .map(w => w.id)
+        .filter((id): id is number => id != null));
+      childRowsReplaced = true;
 
       // 3. Document uploads (multipart, one TaskDocument per file).
       await Promise.all(
@@ -309,10 +375,66 @@ export default function KycReviewWizard({ taskId }: KycReviewWizardProps) {
       notify('success', 'KYC review details saved and submitted to the checker.');
     }
     catch {
+      if (childRowsReplaced && profileId != null) {
+        try {
+          const rollbackProfileId = profileId;
+          // Best-effort rollback: remove newly created child rows and
+          // restore the previous server state.
+          await Promise.all([
+            ...createdAddressIds.map(id => deleteCustomerAddress(id).unwrap()),
+            ...createdAccountIds.map(id => deleteCusAccount(id).unwrap()),
+            ...createdWealthIds.map(id => deleteSourceOfWealth(id).unwrap()),
+          ]);
+
+          await Promise.all([
+            ...previousAddresses.map(a =>
+              createCustomerAddress({
+                org,
+                profile: rollbackProfileId,
+                address_type: a.address_type,
+                line1: a.line1,
+                line2: a.line2 ?? null,
+                city: a.city,
+                state: a.state ?? null,
+                zipcode: a.zipcode ?? null,
+                country: a.country,
+                is_primary: a.is_primary,
+              }).unwrap()),
+            ...previousAccounts.map(a =>
+              createCusAccount({
+                org,
+                profile: rollbackProfileId,
+                acc_num: a.acc_num,
+                acc_type: a.acc_type,
+                acc_name: a.acc_name,
+                currency: a.currency,
+                balance: a.balance ?? null,
+                branch: a.branch ?? null,
+                opened_date: a.opened_date ?? null,
+                status: a.status,
+              }).unwrap()),
+            ...previousWealthSources.map(w =>
+              createSourceOfWealth({
+                org,
+                profile: rollbackProfileId,
+                source_type: w.source_type,
+                description: w.description ?? null,
+                amount: w.amount ?? null,
+                currency: w.currency,
+                country: w.country ?? null,
+                proof_ref: w.proof_ref ?? null,
+              }).unwrap()),
+          ]);
+        }
+        catch {
+          // swallow rollback failures and surface the main failure notice
+        }
+      }
+
       notify(
         'error',
-        'Failed to save the KYC review details. Some records may have been '
-        + 'partially saved — please review before resubmitting.',
+        'Failed to save the KYC review details. A best-effort rollback was '
+        + 'attempted; please review the data before resubmitting.',
       );
     }
     finally {

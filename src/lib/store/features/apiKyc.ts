@@ -1,25 +1,25 @@
 import type { IAPIListResponse } from '~/lib/types/common';
 import type {
-    ICoreProfile,
-    ICoreProfileCreate,
-    ICountry,
-    ICusAccount,
-    ICusAccountCreate,
-    ICustomerAddress,
-    ICustomerAddressCreate,
-    IKycTask,
-    ISegment,
-    ISourceOfWealth,
-    ISourceOfWealthCreate,
-    ITaskDocument,
-    ITaskDocumentUpload,
-    IWorkflowAdvanceInput,
-    IWorkflowCancelInput,
-    IWorkflowDefinition,
-    IWorkflowInstance,
-    IWorkflowRollbackInput,
-    IWorkflowStartInput,
-    IWorkflowTransitionLog,
+  ICoreProfile,
+  ICoreProfileCreate,
+  ICountry,
+  ICusAccount,
+  ICusAccountCreate,
+  ICustomerAddress,
+  ICustomerAddressCreate,
+  IKycTask,
+  ISegment,
+  ISourceOfWealth,
+  ISourceOfWealthCreate,
+  ITaskDocument,
+  ITaskDocumentUpload,
+  IWorkflowAdvanceInput,
+  IWorkflowCancelInput,
+  IWorkflowDefinition,
+  IWorkflowInstance,
+  IWorkflowRollbackInput,
+  IWorkflowStartInput,
+  IWorkflowTransitionLog,
 } from '~/lib/types/kyc';
 import { apiBase } from './apiBase';
 
@@ -195,6 +195,18 @@ const extendedApiKyc = apiBase
         invalidatesTags: [{ type: 'CoreProfile', id: 'LIST' }],
       }),
 
+      updateCoreProfile: builder.mutation<
+        ICoreProfile,
+        { id: number | string, body: Partial<ICoreProfileCreate> }
+      >({
+        query: ({ id, body }) => ({
+          url: `coreprofiles/${id}/`,
+          method: 'PATCH',
+          body,
+        }),
+        invalidatesTags: [{ type: 'CoreProfile', id: 'LIST' }],
+      }),
+
       getCusAccounts: builder.query<IAPIListResponse<ICusAccount>, void>({
         query: () => 'cusaccounts/?page_size=100',
         providesTags: [{ type: 'CusAccount', id: 'LIST' }],
@@ -202,6 +214,11 @@ const extendedApiKyc = apiBase
 
       createCusAccount: builder.mutation<ICusAccount, ICusAccountCreate>({
         query: body => ({ url: 'cusaccounts/', method: 'POST', body }),
+        invalidatesTags: [{ type: 'CusAccount', id: 'LIST' }],
+      }),
+
+      deleteCusAccount: builder.mutation<void, number | string>({
+        query: id => ({ url: `cusaccounts/${id}/`, method: 'DELETE' }),
         invalidatesTags: [{ type: 'CusAccount', id: 'LIST' }],
       }),
 
@@ -215,8 +232,18 @@ const extendedApiKyc = apiBase
         invalidatesTags: [{ type: 'SourceOfWealth', id: 'LIST' }],
       }),
 
+      deleteSourceOfWealth: builder.mutation<void, number | string>({
+        query: id => ({ url: `sourcesofwealth/${id}/`, method: 'DELETE' }),
+        invalidatesTags: [{ type: 'SourceOfWealth', id: 'LIST' }],
+      }),
+
       createCustomerAddress: builder.mutation<ICustomerAddress, ICustomerAddressCreate>({
         query: body => ({ url: 'customeraddresses/', method: 'POST', body }),
+        invalidatesTags: [{ type: 'CustomerAddress', id: 'LIST' }],
+      }),
+
+      deleteCustomerAddress: builder.mutation<void, number | string>({
+        query: id => ({ url: `customeraddresses/${id}/`, method: 'DELETE' }),
         invalidatesTags: [{ type: 'CustomerAddress', id: 'LIST' }],
       }),
 
@@ -263,11 +290,15 @@ export const {
   useGetSegmentsQuery,
   useGetCoreProfilesQuery,
   useCreateCoreProfileMutation,
+  useUpdateCoreProfileMutation,
   useGetCusAccountsQuery,
   useCreateCusAccountMutation,
+  useDeleteCusAccountMutation,
   useGetSourcesOfWealthQuery,
   useCreateSourceOfWealthMutation,
+  useDeleteSourceOfWealthMutation,
   useCreateCustomerAddressMutation,
+  useDeleteCustomerAddressMutation,
   useGetCustomerAddressesQuery,
   useGetTaskDocumentsQuery,
   useUploadTaskDocumentMutation,

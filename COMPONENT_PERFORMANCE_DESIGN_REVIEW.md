@@ -13,6 +13,8 @@ Date: 2026-06-02
 - Current behavior creates profile + child rows each submit.
 - Suggested: upsert CoreProfile by task, then sync child collections.
 - Files: src/app/pages/_dash/kyc-review/KycReviewWizard.tsx
+- Status: Implemented (2026-06-03): CoreProfile now upserts (PATCH when existing),
+  existing addresses/accounts/wealth rows are deleted and recreated from current payload.
 
 ### Medium
 2. Avoid duplicate reference-data subscriptions in KYC flow.
@@ -49,6 +51,13 @@ Date: 2026-06-02
 - [x] FormFields typo fixed (`variant`) and select helper text added with FormHelperText.
 - [x] TopBar route name derived with useMemo; ProfileMenu rendered as component props.
 - [x] SectionForm trigger loop and extra debug logging removed.
+
+## Implemented in follow-up pass (2026-06-03)
+- [x] Added RTK mutations for `updateCoreProfile`, `deleteCustomerAddress`,
+	`deleteCusAccount`, and `deleteSourceOfWealth`.
+- [x] Updated KYC Maker submit orchestration to be idempotent:
+	upsert profile, replace child collections, upload only selected new files,
+	then advance workflow.
 
 ## Deferred Recommendations
 - KYC persistence idempotency (upsert + child sync) requires coordinated API mutation additions and careful migration handling.
