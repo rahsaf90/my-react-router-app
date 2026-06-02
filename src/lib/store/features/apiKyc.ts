@@ -69,7 +69,6 @@ const extendedApiKyc = apiBase
             url: `kyc/reviews/${reviewId}/documents/`,
             method: 'POST',
             body: formData,
-            formData: true,
           };
         },
         invalidatesTags: (_result, _error, { reviewId }) => [
