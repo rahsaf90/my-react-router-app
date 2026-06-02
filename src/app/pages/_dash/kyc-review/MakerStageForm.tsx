@@ -9,12 +9,8 @@ import {
     TextField,
 } from '@mui/material';
 import { useState } from 'react';
-import { useForm, type Path, type Resolver } from 'react-hook-form';
-import {
-    useGetCountriesQuery,
-    useGetSegmentsQuery,
-} from '~/lib/store/features/apiKyc';
-import type { IKycFormValues } from '~/lib/types/kyc';
+import { useForm, useWatch, type Path, type Resolver } from 'react-hook-form';
+import type { ICountry, IKycFormValues, ISegment } from '~/lib/types/kyc';
 import AccountDetailsStep from './AccountDetailsStep';
 import AddressStep from './AddressStep';
 import CustomerInfoStep from './CustomerInfoStep';
@@ -48,35 +44,51 @@ const STEP_FIELDS: Path<IKycFormValues>[][] = [
 interface MakerStageFormProps {
   /** Pre-fill values (e.g. when a rejected Maker stage is reworked). */
   initialValues?: Partial<IKycFormValues>
+  countries: ICountry[]
+  segments: ISegment[]
   submitting: boolean
   onSubmit: (payload: IKycFormValues, remarks: string) => void | Promise<void>
 }
 
 export default function MakerStageForm({
   initialValues,
+  countries,
+  segments,
   submitting,
   onSubmit,
 }: MakerStageFormProps) {
   const [subStep, setSubStep] = useState(0);
   const [remarks, setRemarks] = useState('');
 
-  const { data: countriesResp } = useGetCountriesQuery();
-  const { data: segmentsResp } = useGetSegmentsQuery();
-  const countries = countriesResp?.results ?? [];
-  const segments = segmentsResp?.results ?? [];
-
   const {
     control,
     handleSubmit,
     trigger,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<IKycFormValues>({
     resolver: yupResolver(kycFormSchema) as Resolver<IKycFormValues>,
     defaultValues: { ...kycFormDefaults, ...initialValues },
     mode: 'onTouched',
   });
+  const [
+    reviewProfile,
+    reviewAddresses,
+    reviewAccounts,
+    reviewWealthSources,
+    reviewDocuments,
+  ] = useWatch({
+    control,
+    name: ['profile', 'addresses', 'accounts', 'wealthSources', 'documents'],
+  });
+
+  const reviewValues: IKycFormValues = {
+    profile: reviewProfile ?? kycFormDefaults.profile,
+    addresses: reviewAddresses ?? kycFormDefaults.addresses,
+    accounts: reviewAccounts ?? kycFormDefaults.accounts,
+    wealthSources: reviewWealthSources ?? kycFormDefaults.wealthSources,
+    documents: reviewDocuments ?? kycFormDefaults.documents,
+  };
 
   const isLast = subStep === SUB_STEPS.length - 1;
 
@@ -91,8 +103,6 @@ export default function MakerStageForm({
   // Pass the full values (including real File objects) so the orchestrator
   // can persist domain resources and upload documents.
   const submit = handleSubmit(values => onSubmit(values, remarks));
-
-  const values = watch();
 
   return (
     <Stack spacing={2}>
@@ -120,7 +130,7 @@ export default function MakerStageForm({
         )}
         {subStep === 5 && (
           <Stack spacing={2}>
-            <ReviewStep values={values} countries={countries} segments={segments} />
+            <ReviewStep values={reviewValues} countries={countries} segments={segments} />
             <TextField
               label="Remarks to checker"
               value={remarks}

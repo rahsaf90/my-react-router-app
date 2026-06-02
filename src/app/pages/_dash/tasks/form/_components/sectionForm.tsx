@@ -1,6 +1,6 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Button, Divider, Typography } from '@mui/material';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { FormProvider, useForm, type SubmitHandler } from 'react-hook-form';
 import type { InferType } from 'yup';
 import Ribbon from '~/components/ui/StyledRibbon';
@@ -37,21 +37,15 @@ export default function SectionForm({ section, taskId, formTmplId, listTypes }: 
      shouldUnregister: false,
    });
 
-   const { handleSubmit, watch, trigger,
-     formState: { isSubmitting, isValid, errors } } = methods; // trigger
+   const { handleSubmit, watch,
+     formState: { isSubmitting, isValid } } = methods;
 
    const onSubmit: SubmitHandler<FormType> = async (values) => {
-     console.log('Form submitted:', values);
+     void values;
      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
    };
 
    const values = watch();
-
-   useEffect(() => {
-     void trigger();
-   }, [trigger, isValid]);
-
-   console.log({ isSubmitting, isValid, errors, values });
 
    return (
      <div title={`task-${taskId}-form-${formTmplId}-section-${section.id}`}>

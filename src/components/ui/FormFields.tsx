@@ -1,4 +1,4 @@
-import { FormControl, InputLabel } from '@mui/material';
+import { FormControl, FormHelperText, InputLabel } from '@mui/material';
 import Select, { type SelectProps } from '@mui/material/Select';
 import type {
   FilledTextFieldProps,
@@ -14,7 +14,7 @@ import { useController, type FieldValues, type UseControllerProps } from 'react-
 export function FormTextField<T extends FieldValues>(
   props: UseControllerProps<T> & React.JSX.IntrinsicAttributes
     & { variant?: TextFieldVariants }
-    & Omit<StandardTextFieldProps | OutlinedTextFieldProps | FilledTextFieldProps, 'variiant'>,
+    & Omit<StandardTextFieldProps | OutlinedTextFieldProps | FilledTextFieldProps, 'variant'>,
 ) {
   const { control, ...otherProps } = props;
   const { field, fieldState: meta } = useController({
@@ -44,8 +44,9 @@ export function FormSelectField<T extends FieldValues>(
   const { field, fieldState: meta } = useController({
     control, name: props.name ?? 'select',
   });
+  const hasError = meta.invalid && !!meta.error?.message;
   return (
-    <FormControl fullWidth>
+    <FormControl fullWidth={props.fullWidth} error={hasError}>
       <InputLabel>{props.label}</InputLabel>
       <Select
         {...field}
@@ -56,8 +57,8 @@ export function FormSelectField<T extends FieldValues>(
         name={field.name} // Send down the input name
         inputRef={field.ref} // Send input ref, so we can focus on input when error appears
         error={meta.invalid} // Indicate error state based on validation
-        // helperText={meta.invalid && meta.error?.message} // Display helper text for errors
       />
+      {hasError && <FormHelperText>{meta.error?.message}</FormHelperText>}
     </FormControl>
   );
 };

@@ -6,10 +6,10 @@ import Typography from '@mui/material/Typography';
 
 import { Avatar, Divider, ListItemIcon, Menu, MenuItem } from '@mui/material';
 import Button from '@mui/material/Button';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { ADMIN_URL } from '~/lib/envConfig';
 import getRouteName from '~/app/routeNames';
+import { ADMIN_URL } from '~/lib/envConfig';
 import { logoutUser } from '~/lib/store/features/authSlice';
 import { toggleDrawer } from '~/lib/store/features/uiSlice';
 import { useAppDispatch, useAppSelector } from '~/lib/store/hooks';
@@ -22,11 +22,8 @@ export default function TopBar({ currentUser }: { currentUser?: IUser }) {
   const dispatch = useAppDispatch();
   const handleDrawerToggle = () => dispatch(toggleDrawer());
 
-  const [curPath, setCurPath] = useState<string>('');
   const { pathname } = useLocation();
-  useEffect(() => {
-    setCurPath(getRouteName(pathname));
-  }, [pathname]);
+  const curPath = useMemo(() => getRouteName(pathname), [pathname]);
 
   const menuId = 'primary-search-account-menu';
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -37,24 +34,15 @@ export default function TopBar({ currentUser }: { currentUser?: IUser }) {
 
   const handleLogout = () => {
     dispatch(logoutUser()).unwrap().then(() => {
-      console.log('User logged out successfully');
-      return navigate('/login', { replace: true });
-    }).catch((error) => {
-      console.error('Logout failed:', error);
+      void navigate('/login', { replace: true });
+    }).catch(() => {
+      // no-op: keep the user on page if logout fails
     });
   };
 
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
-
-  const renderMenu = ProfileMenu(
-    menuId,
-    anchorEl,
-    currentUser,
-    handleLogout,
-    handleMenuClose,
-  );
 
   return (
     <Box className="top-bar">
@@ -136,17 +124,31 @@ export default function TopBar({ currentUser }: { currentUser?: IUser }) {
 
         </Toolbar>
       </AppBar>
-      {renderMenu}
+      <ProfileMenu
+        menuId={menuId}
+        anchorEl={anchorEl}
+        currentUser={currentUser}
+        handleLogout={handleLogout}
+        handleMenuClose={handleMenuClose}
+      />
     </Box>
   );
 }
-function ProfileMenu(
-  menuId: string,
-  anchorEl: HTMLElement | null,
-  currentUser: IUser | undefined,
-  handleLogout: () => void,
-  handleMenuClose: () => void,
-) {
+interface ProfileMenuProps {
+  menuId: string
+  anchorEl: HTMLElement | null
+  currentUser?: IUser
+  handleLogout: () => void
+  handleMenuClose: () => void
+}
+
+function ProfileMenu({
+  menuId,
+  anchorEl,
+  currentUser,
+  handleLogout,
+  handleMenuClose,
+}: ProfileMenuProps) {
   const isMenuOpen = Boolean(anchorEl);
   if (currentUser === undefined || currentUser === null) {
     return <div> Unknown User</div>;

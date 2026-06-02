@@ -168,7 +168,7 @@ export default function KycReviewWizard({ taskId }: KycReviewWizardProps) {
   const stages = useMemo(
     () =>
       [...(instance?.stage_instances ?? [])].sort(
-        (a, b) => a.stage_order - b.stage_order,
+        (a, b) => (a.stage_order ?? 0) - (b.stage_order ?? 0),
       ),
     [instance],
   );
@@ -524,6 +524,8 @@ export default function KycReviewWizard({ taskId }: KycReviewWizardProps) {
               <Divider sx={{ mb: 2 }} />
               <MakerStageForm
                 initialValues={domainData}
+                countries={countries}
+                segments={segments}
                 submitting={busy}
                 onSubmit={handleMakerSubmit}
               />

@@ -1,16 +1,16 @@
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import {
-    Chip,
-    Divider,
-    Paper,
-    Stack,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Typography,
+  Chip,
+  Divider,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
 } from '@mui/material';
 import type { ICountry, IKycFormValues, ISegment } from '~/lib/types/kyc';
 
@@ -22,6 +22,15 @@ interface ReviewStepProps {
 
 export default function ReviewStep({ values, countries = [], segments = [] }: ReviewStepProps) {
   const { profile, addresses, accounts, wealthSources, documents } = values;
+
+  const addressKey = (idx: number, line1: string, city: string, country: number | '' | null) =>
+    `addr-${idx}-${line1}-${city}-${country ?? ''}`;
+  const accountKey = (idx: number, accNum: string, accName: string) =>
+    `acct-${idx}-${accNum}-${accName}`;
+  const wealthKey = (idx: number, sourceType: string, proofRef: string) =>
+    `wealth-${idx}-${sourceType}-${proofRef}`;
+  const documentKey = (idx: number, fileName: string, title: string, docType: string) =>
+    `doc-${idx}-${docType}-${fileName}-${title}`;
 
   const countryName = (id: number | '' | null | undefined) => {
     if (id === '' || id == null) return '-';
@@ -103,7 +112,7 @@ export default function ReviewStep({ values, countries = [], segments = [] }: Re
                   </TableHead>
                   <TableBody>
                     {addresses.map((a, i) => (
-                      <TableRow key={i}>
+                      <TableRow key={addressKey(i, a.line1, a.city, a.country)}>
                         <TableCell>{a.address_type}</TableCell>
                         <TableCell>{a.line1 || '-'}</TableCell>
                         <TableCell>{a.line2 || '-'}</TableCell>
@@ -143,7 +152,7 @@ export default function ReviewStep({ values, countries = [], segments = [] }: Re
             </TableHead>
             <TableBody>
               {accounts.map((a, i) => (
-                <TableRow key={i}>
+                <TableRow key={accountKey(i, a.acc_num, a.acc_name)}>
                   <TableCell>{a.acc_num || '-'}</TableCell>
                   <TableCell>{a.acc_name || '-'}</TableCell>
                   <TableCell>{a.acc_type || '-'}</TableCell>
@@ -188,7 +197,7 @@ export default function ReviewStep({ values, countries = [], segments = [] }: Re
             </TableHead>
             <TableBody>
               {wealthSources.map((w, i) => (
-                <TableRow key={i}>
+                <TableRow key={wealthKey(i, w.source_type, w.proof_ref)}>
                   <TableCell>{w.source_type || '-'}</TableCell>
                   <TableCell>{w.description || '-'}</TableCell>
                   <TableCell align="right">
@@ -220,7 +229,12 @@ export default function ReviewStep({ values, countries = [], segments = [] }: Re
           : (
               <Stack spacing={1}>
                 {documents.map((d, i) => (
-                  <Stack key={i} direction="row" spacing={1} alignItems="center">
+                  <Stack
+                    key={documentKey(i, d.fileName, d.title, d.doc_type)}
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                  >
                     <InsertDriveFileIcon fontSize="small" color="action" />
                     <Chip label={d.doc_type} size="small" variant="outlined" />
                     <Typography variant="body2">{d.fileName || 'No file'}</Typography>
