@@ -1,25 +1,30 @@
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import {
-    Checkbox,
-    FormControl,
-    FormControlLabel,
-    FormHelperText,
-    MenuItem,
-    Stack,
-    Typography,
+  Checkbox,
+  FormControl,
+  FormControlLabel,
+  FormHelperText,
+  MenuItem,
+  Stack,
+  Typography,
 } from '@mui/material';
 import Button from '@mui/material/Button';
 import {
-    Controller,
-    useController,
-    type Control,
-    type Path,
-    type UseFormSetValue,
+  Controller,
+  useController,
+  type Control,
+  type Path,
+  type UseFormSetValue,
 } from 'react-hook-form';
 import { FormSelectField, FormTextField } from '~/components/ui/FormFields';
 import type { IFrmField } from '~/lib/types/conf';
 import type { ICountry, IKycFormValues, ISegment } from '~/lib/types/kyc';
-import { fieldOptions, isFieldRequired, isUploadField } from './dynamicForm';
+import {
+  fieldOptions,
+  isFieldRequired,
+  isUploadField,
+  type ReferenceOptionCache,
+} from './dynamicForm';
 
 interface DynamicFieldProps {
   field: IFrmField
@@ -29,6 +34,7 @@ interface DynamicFieldProps {
   setValue: UseFormSetValue<IKycFormValues>
   countries: ICountry[]
   segments: ISegment[]
+  optionCache?: ReferenceOptionCache
   /** Sibling path that mirrors the chosen file name (upload fields only). */
   fileNamePath?: string
   size?: 'small' | 'medium'
@@ -47,6 +53,7 @@ export default function DynamicField({
   setValue,
   countries,
   segments,
+  optionCache,
   fileNamePath,
   size = 'medium',
   dense = false,
@@ -94,7 +101,7 @@ export default function DynamicField({
 
   /* ---- Select / multiselect ---- */
   if (field.field_type === 'select' || field.field_type === 'multiselect') {
-    const options = fieldOptions(field, countries, segments);
+    const options = fieldOptions(field, countries, segments, optionCache);
     const multiple = field.field_type === 'multiselect';
     return (
       <Stack spacing={0.25}>

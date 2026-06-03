@@ -12,6 +12,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import { useMemo } from 'react';
 import type { ICountry, IKycFormValues, ISegment } from '~/lib/types/kyc';
 
 interface ReviewStepProps {
@@ -22,6 +23,15 @@ interface ReviewStepProps {
 
 export default function ReviewStep({ values, countries = [], segments = [] }: ReviewStepProps) {
   const { profile, addresses, accounts, wealthSources, documents } = values;
+
+  const countryNameMap = useMemo(
+    () => new Map(countries.map(c => [c.id, c.name] as const)),
+    [countries],
+  );
+  const segmentNameMap = useMemo(
+    () => new Map(segments.map(s => [s.id, s.name] as const)),
+    [segments],
+  );
 
   const addressKey = (idx: number, line1: string, city: string, country: number | '' | null) =>
     `addr-${idx}-${line1}-${city}-${country ?? ''}`;
@@ -34,11 +44,11 @@ export default function ReviewStep({ values, countries = [], segments = [] }: Re
 
   const countryName = (id: number | '' | null | undefined) => {
     if (id === '' || id == null) return '-';
-    return countries.find(c => c.id === id)?.name ?? String(id);
+    return countryNameMap.get(id) ?? String(id);
   };
   const segmentName = (id: number | '' | null | undefined) => {
     if (id === '' || id == null) return '-';
-    return segments.find(s => s.id === id)?.name ?? String(id);
+    return segmentNameMap.get(id) ?? String(id);
   };
 
   return (

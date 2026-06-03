@@ -1,29 +1,30 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
-    Box,
-    Button,
-    Stack,
-    Step,
-    StepLabel,
-    Stepper,
-    TextField,
-    Typography,
+  Box,
+  Button,
+  Stack,
+  Step,
+  StepLabel,
+  Stepper,
+  TextField,
+  Typography,
 } from '@mui/material';
 import { useMemo, useState } from 'react';
 import {
-    useForm,
-    useWatch,
-    type Path,
-    type Resolver,
+  useForm,
+  useWatch,
+  type Control,
+  type Path,
+  type Resolver,
 } from 'react-hook-form';
 import type { IFrmSect, IFrmSubSect, IFrmTmplSerialized } from '~/lib/types/conf';
 import type { ICountry, IKycFormValues, ISegment } from '~/lib/types/kyc';
 import {
-    bucketForSubSect,
-    sectionValidationPaths,
-    visibleFields,
-    visibleSections,
-    visibleSubSects,
+  bucketForSubSect,
+  sectionValidationPaths,
+  visibleFields,
+  visibleSections,
+  visibleSubSects,
 } from './dynamicForm';
 import DynamicSubSection from './DynamicSubSection';
 import ReviewStep from './ReviewStep';
@@ -91,25 +92,6 @@ export default function MakerStageForm({
     defaultValues: { ...kycFormDefaults, ...initialValues },
     mode: 'onTouched',
   });
-
-  const [
-    reviewProfile,
-    reviewAddresses,
-    reviewAccounts,
-    reviewWealthSources,
-    reviewDocuments,
-  ] = useWatch({
-    control,
-    name: ['profile', 'addresses', 'accounts', 'wealthSources', 'documents'],
-  });
-
-  const reviewValues: IKycFormValues = {
-    profile: reviewProfile ?? kycFormDefaults.profile,
-    addresses: reviewAddresses ?? kycFormDefaults.addresses,
-    accounts: reviewAccounts ?? kycFormDefaults.accounts,
-    wealthSources: reviewWealthSources ?? kycFormDefaults.wealthSources,
-    documents: reviewDocuments ?? kycFormDefaults.documents,
-  };
 
   const isReviewStep = subStep === steps.length - 1;
   const currentSection: IFrmSect | undefined = sections[subStep];
@@ -179,7 +161,11 @@ export default function MakerStageForm({
 
         {isReviewStep && (
           <Stack spacing={2}>
-            <ReviewStep values={reviewValues} countries={countries} segments={segments} />
+            <ReviewStepContent
+              control={control}
+              countries={countries}
+              segments={segments}
+            />
             {/* Only show the remarks box here when it is not templated into a
                 section of its own. */}
             {!remarksField && remarksBox}
@@ -213,4 +199,33 @@ export default function MakerStageForm({
       </Stack>
     </Stack>
   );
+}
+
+interface ReviewStepContentProps {
+  control: Control<IKycFormValues>
+  countries: ICountry[]
+  segments: ISegment[]
+}
+
+function ReviewStepContent({ control, countries, segments }: ReviewStepContentProps) {
+  const [
+    profile,
+    addresses,
+    accounts,
+    wealthSources,
+    documents,
+  ] = useWatch({
+    control,
+    name: ['profile', 'addresses', 'accounts', 'wealthSources', 'documents'],
+  });
+
+  const values: IKycFormValues = {
+    profile: profile ?? kycFormDefaults.profile,
+    addresses: addresses ?? kycFormDefaults.addresses,
+    accounts: accounts ?? kycFormDefaults.accounts,
+    wealthSources: wealthSources ?? kycFormDefaults.wealthSources,
+    documents: documents ?? kycFormDefaults.documents,
+  };
+
+  return <ReviewStep values={values} countries={countries} segments={segments} />;
 }

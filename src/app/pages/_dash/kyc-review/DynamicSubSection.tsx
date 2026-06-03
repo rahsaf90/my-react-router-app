@@ -16,6 +16,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { useMemo } from 'react';
 import {
   useFieldArray,
   type Control,
@@ -33,6 +34,7 @@ import {
   rowFieldPath,
   visibleFields,
   type KycArrayBucket,
+  type ReferenceOptionCache,
 } from './dynamicForm';
 
 interface DynamicSubSectionProps {
@@ -50,8 +52,15 @@ export default function DynamicSubSection({
   countries,
   segments,
 }: DynamicSubSectionProps) {
-  const fields = visibleFields(sub);
+  const fields = useMemo(() => visibleFields(sub), [sub]);
   const bucket = arrayBucketForSubSect(sub);
+  const optionCache = useMemo<ReferenceOptionCache>(
+    () => ({
+      countryOptions: countries.map(c => ({ value: c.id!, label: c.name })),
+      segmentOptions: segments.map(s => ({ value: s.id!, label: s.name })),
+    }),
+    [countries, segments],
+  );
 
   if (isMultiRow(sub) && bucket) {
     return (
@@ -84,6 +93,7 @@ export default function DynamicSubSection({
                 setValue={setValue}
                 countries={countries}
                 segments={segments}
+                optionCache={optionCache}
               />
             </Grid>
           );
@@ -108,11 +118,18 @@ function MultiRowSubSection({
   countries,
   segments,
 }: MultiRowSubSectionProps) {
-  const fields = visibleFields(sub);
+  const fields = useMemo(() => visibleFields(sub), [sub]);
   const { fields: rows, append, remove } = useFieldArray({
     control,
     name: bucket as FieldArrayPath<IKycFormValues>,
   });
+  const optionCache = useMemo<ReferenceOptionCache>(
+    () => ({
+      countryOptions: countries.map(c => ({ value: c.id!, label: c.name })),
+      segmentOptions: segments.map(s => ({ value: s.id!, label: s.name })),
+    }),
+    [countries, segments],
+  );
 
   return (
     <Stack spacing={1.5}>
@@ -152,6 +169,7 @@ function MultiRowSubSection({
                         setValue={setValue}
                         countries={countries}
                         segments={segments}
+                        optionCache={optionCache}
                         size="small"
                         dense
                       />

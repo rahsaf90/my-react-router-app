@@ -1,10 +1,10 @@
 import type { IFrmField, IFrmSect, IFrmSubSect } from '~/lib/types/conf';
 import type { ICountry, IKycFormValues, ISegment } from '~/lib/types/kyc';
 import {
-    defaultAccountRow,
-    defaultAddressRow,
-    defaultDocument,
-    defaultWealthSourceRow,
+  defaultAccountRow,
+  defaultAddressRow,
+  defaultDocument,
+  defaultWealthSourceRow,
 } from './schema';
 
 /* ------------------------------------------------------------------ */
@@ -90,6 +90,11 @@ export interface FieldOption {
   label: string
 }
 
+export interface ReferenceOptionCache {
+  countryOptions: FieldOption[]
+  segmentOptions: FieldOption[]
+}
+
 /**
  * Resolve the option list for a select/multiselect field.
  *  - `rules.fk_model === 'conf.Country'` → country reference data
@@ -100,13 +105,16 @@ export function fieldOptions(
   field: IFrmField,
   countries: ICountry[],
   segments: ISegment[],
+  optionCache?: ReferenceOptionCache,
 ): FieldOption[] {
   const fk = field.rules?.fk_model;
   if (fk === 'conf.Country') {
-    return countries.map(c => ({ value: c.id!, label: c.name }));
+    return optionCache?.countryOptions
+      ?? countries.map(c => ({ value: c.id!, label: c.name }));
   }
   if (fk === 'conf.Segment') {
-    return segments.map(s => ({ value: s.id!, label: s.name }));
+    return optionCache?.segmentOptions
+      ?? segments.map(s => ({ value: s.id!, label: s.name }));
   }
   return field.rules?.options ?? [];
 }

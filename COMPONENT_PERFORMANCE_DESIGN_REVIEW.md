@@ -59,6 +59,29 @@ Date: 2026-06-02
 	upsert profile, replace child collections, upload only selected new files,
 	then advance workflow.
 
+## Implemented in optimization pass (2026-06-03)
+- [x] Reduced repeated country/segment label lookups in review rendering by
+	memoizing id-to-name maps.
+	- File: src/app/pages/_dash/kyc-review/ReviewStep.tsx
+- [x] Scoped review-step form subscriptions to a review-only component so
+	non-review steps avoid broad `useWatch` churn.
+	- File: src/app/pages/_dash/kyc-review/MakerStageForm.tsx
+- [x] Added shared reference option caching for dynamic KYC fields to avoid
+	remapping countries/segments options in every select field render.
+	- Files: src/app/pages/_dash/kyc-review/dynamicForm.ts,
+		src/app/pages/_dash/kyc-review/DynamicField.tsx,
+		src/app/pages/_dash/kyc-review/DynamicSubSection.tsx
+- [x] Memoized visible field derivation in dynamic sub-sections to reduce
+	repeated sort/filter operations in rerender paths.
+	- File: src/app/pages/_dash/kyc-review/DynamicSubSection.tsx
+
+## Recommendations still open
+- Split `KycReviewWizard` orchestration into focused hooks/components
+	(workflow state, persistence orchestration, action panel) to reduce
+	rerender scope and improve testability.
+- Add lightweight telemetry for best-effort rollback failures in Maker submit
+	error handling so operational partial-failure diagnosis is possible.
+
 ## Deferred Recommendations
 - KYC persistence idempotency (upsert + child sync) requires coordinated API mutation additions and careful migration handling.
 - Tasks page should move to controlled server-driven pagination/sorting/filtering.
